@@ -1,6 +1,5 @@
 /**
  * Podatkovni model osebe (po tehničnem briefu).
- * Zaenkrat samo tipi – brez logike, brez povezave na Supabase.
  */
 
 export type ContactType = 'phone' | 'whatsapp' | 'instagram' | 'telegram' | 'email';
@@ -28,3 +27,9 @@ export interface Person {
   /** ISO timestamp */
   createdAt: string;
 }
+
+/**
+ * Nov vnos iz obrazca – brez polj, ki jih dodeli baza:
+ * `id` (gen_random_uuid), `userId` (auth.uid, ko dodamo Auth), `createdAt` (default now()).
+ */
+export type PersonDraft = Omit<Person, 'id' | 'userId' | 'createdAt'>;

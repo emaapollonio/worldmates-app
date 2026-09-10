@@ -20,6 +20,15 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "WorldMates potrebuje dostop do galerije, da dodaš fotografijo prijatelja.",
+          "cameraPermission": "WorldMates potrebuje dostop do kamere, da posnameš fotografijo prijatelja."
+        }
+      ]
+    ]
   }
 }
