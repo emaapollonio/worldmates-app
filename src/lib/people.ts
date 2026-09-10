@@ -65,3 +65,21 @@ export async function listPeople(): Promise<PeopleRow[]> {
   if (error) throw error;
   return (data ?? []) as PeopleRow[];
 }
+
+/** Naloži eno osebo po id. Vrne null, če je ni. */
+export async function getPerson(id: string): Promise<PeopleRow | null> {
+  const { data, error } = await supabase
+    .from('people')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (error) throw error;
+  return (data as PeopleRow | null) ?? null;
+}
+
+/** Izbriše osebo po id. */
+export async function deletePerson(id: string): Promise<void> {
+  const { error } = await supabase.from('people').delete().eq('id', id);
+  if (error) throw error;
+}
