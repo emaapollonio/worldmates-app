@@ -54,3 +54,14 @@ export async function insertPerson(draft: PersonDraft): Promise<PeopleRow> {
   if (error) throw error;
   return data as PeopleRow;
 }
+
+/** Naloži vse osebe (vsi stolpci), najnovejše najprej. */
+export async function listPeople(): Promise<PeopleRow[]> {
+  const { data, error } = await supabase
+    .from('people')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return (data ?? []) as PeopleRow[];
+}
