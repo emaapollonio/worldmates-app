@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "worldmates-tmp",
-    "slug": "worldmates-tmp",
+    "name": "WorldMates",
+    "slug": "worldmates",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
