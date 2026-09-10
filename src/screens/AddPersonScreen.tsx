@@ -43,6 +43,28 @@ const CONTACT_OPTIONS: ContactOption[] = [
   { type: 'email', label: 'E-pošta', icon: 'mail-outline', placeholder: 'ime@primer.com', keyboardType: 'email-address', autoCapitalize: 'none' },
 ];
 
+/**
+ * Berljivo sporočilo iz napake. Supabase (PostgrestError) je navaden objekt
+ * z `message` (+ neobvezno `details` / `hint`), ne instanca Error – zato
+ * `String(e)` da "[object Object]".
+ */
+function describeError(e: unknown): string {
+  if (typeof e === 'string') return e;
+  if (e instanceof Error) return e.message;
+  if (e && typeof e === 'object') {
+    const err = e as { message?: unknown; details?: unknown; hint?: unknown };
+    if (typeof err.message === 'string' && err.message) {
+      const extra = [err.details, err.hint].filter((x): x is string => typeof x === 'string' && x.length > 0);
+      return extra.length > 0 ? `${err.message} (${extra.join(' – ')})` : err.message;
+    }
+  }
+  try {
+    return JSON.stringify(e);
+  } catch {
+    return 'Neznana napaka';
+  }
+}
+
 export default function AddPersonScreen() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -149,9 +171,8 @@ export default function AddPersonScreen() {
       resetForm();
       Alert.alert('Shranjeno', `${row.first_name} ${row.last_name} je zapisan v Supabase (id: ${row.id}).`);
     } catch (e) {
-      const message = e instanceof Error ? e.message : String(e);
       console.error('[AddPerson] napaka pri shranjevanju v Supabase:', e);
-      Alert.alert('Napaka pri shranjevanju', message);
+      Alert.alert('Napaka pri shranjevanju', describeError(e));
     } finally {
       setSaving(false);
     }
