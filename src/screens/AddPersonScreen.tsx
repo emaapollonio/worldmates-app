@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -15,15 +15,20 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import type { ContactType, PersonDraft } from '../types/person';
 import type { RootStackParamList } from '../navigation/types';
-import { insertPerson } from '../lib/people';
+import { insertPerson, updatePerson, getPerson, type EditablePersonFields } from '../lib/people';
 import { uploadPersonPhotos } from '../lib/storage';
 import { geocodeLocation } from '../lib/geocoding';
 import { colors } from '../theme/colors';
+
+/** Loči že naložene (remote) fotografije od na novo izbranih lokalnih (file://…). */
+function isRemoteUrl(uri: string): boolean {
+  return /^https?:\/\//i.test(uri);
+}
 
 type ContactOption = {
   type: ContactType;
@@ -66,10 +71,13 @@ function describeError(e: unknown): string {
 
 export default function AddPersonScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const route = useRoute<RouteProp<RootStackParamList, 'AddPerson'>>();
+  const personId = route.params?.personId;
+  const isEditing = !!personId;
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  /** Lokalni URI-ji (pred nalaganjem). Prva slika = profilna. */
+  /** URI-ji slik – lahko mešano: obstoječi remote URL-ji (urejanje) + novi lokalni file://. Prva slika = profilna. */
   const [photoUris, setPhotoUris] = useState<string[]>([]);
   const [country, setCountry] = useState('');
   const [city, setCity] = useState('');
@@ -78,6 +86,44 @@ export default function AddPersonScreen() {
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
   const [savePhase, setSavePhase] = useState<'idle' | 'geocoding' | 'uploading' | 'saving'>('idle');
+  const [loadingExisting, setLoadingExisting] = useState(isEditing);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  // Pri urejanju naloži obstoječe podatke osebe in vnaprej izpolni obrazec.
+  useEffect(() => {
+    if (!personId) return;
+    let cancelled = false;
+    (async () => {
+      setLoadingExisting(true);
+      setLoadError(null);
+      try {
+        const row = await getPerson(personId);
+        if (cancelled) return;
+        if (!row) {
+          setLoadError('Osebe ni bilo mogoče najti.');
+          return;
+        }
+        setFirstName(row.first_name);
+        setLastName(row.last_name);
+        setCountry(row.country);
+        setCity(row.city);
+        setContactType(row.contact_type);
+        setContactValue(row.contact_value ?? '');
+        setNote(row.note ?? '');
+        setPhotoUris(row.photo_urls && row.photo_urls.length > 0 ? row.photo_urls : row.photo_url ? [row.photo_url] : []);
+      } catch (e) {
+        if (!cancelled) {
+          console.error('[AddPerson] nalaganje osebe za urejanje ni uspelo:', e);
+          setLoadError(e instanceof Error ? e.message : 'Nalaganje ni uspelo.');
+        }
+      } finally {
+        if (!cancelled) setLoadingExisting(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [personId]);
 
   const activeContact = useMemo(
     () => CONTACT_OPTIONS.find((o) => o.type === contactType) ?? CONTACT_OPTIONS[0],
@@ -172,32 +218,69 @@ export default function AddPersonScreen() {
         return;
       }
 
-      let uploadedUrls: string[] = [];
-      if (photoUris.length > 0) {
+      // Obstoječe (že naložene) slike pustimo pri miru; naložimo samo nove lokalne,
+      // na njihova prvotna mesta v seznamu (vrstni red, torej profilna slika, ostane enak).
+      const finalUrls: string[] = new Array(photoUris.length);
+      const localIndices: number[] = [];
+      const localUris: string[] = [];
+      photoUris.forEach((uri, idx) => {
+        if (isRemoteUrl(uri)) finalUrls[idx] = uri;
+        else {
+          localIndices.push(idx);
+          localUris.push(uri);
+        }
+      });
+
+      if (localUris.length > 0) {
         setSavePhase('uploading');
-        uploadedUrls = await uploadPersonPhotos(photoUris);
+        const uploaded = await uploadPersonPhotos(localUris);
+        uploaded.forEach((url, i) => {
+          finalUrls[localIndices[i]] = url;
+        });
       }
       setSavePhase('saving');
 
-      const draft: PersonDraft = {
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
-        photoUrl: uploadedUrls[0] ?? null,
-        photoUrls: uploadedUrls.length > 0 ? uploadedUrls : null,
-        country: country.trim(),
-        city: city.trim(),
-        latitude: location.latitude,
-        longitude: location.longitude,
-        contactType,
-        contactValue: contactValue.trim() || null,
-        note: note.trim() || null,
-        metDate: null,
-        metLocation: null,
-        tags: null,
-      };
+      const photoUrl = finalUrls[0] ?? null;
+      const photoUrlsField = finalUrls.length > 0 ? finalUrls : null;
+      const trimmedContactValue = contactValue.trim() || null;
+      const trimmedNote = note.trim() || null;
 
-      const row = await insertPerson(draft);
-      console.log('[AddPerson] shranjeno v Supabase:\n' + JSON.stringify(row, null, 2));
+      if (isEditing && personId) {
+        const fields: EditablePersonFields = {
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          photo_url: photoUrl,
+          photo_urls: photoUrlsField,
+          country: country.trim(),
+          city: city.trim(),
+          latitude: location.latitude,
+          longitude: location.longitude,
+          contact_type: contactType,
+          contact_value: trimmedContactValue,
+          note: trimmedNote,
+        };
+        const row = await updatePerson(personId, fields);
+        console.log('[AddPerson] posodobljeno v Supabase:\n' + JSON.stringify(row, null, 2));
+      } else {
+        const draft: PersonDraft = {
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          photoUrl,
+          photoUrls: photoUrlsField,
+          country: country.trim(),
+          city: city.trim(),
+          latitude: location.latitude,
+          longitude: location.longitude,
+          contactType,
+          contactValue: trimmedContactValue,
+          note: trimmedNote,
+          metDate: null,
+          metLocation: null,
+          tags: null,
+        };
+        const row = await insertPerson(draft);
+        console.log('[AddPerson] shranjeno v Supabase:\n' + JSON.stringify(row, null, 2));
+      }
       resetForm();
       // Nazaj na zaslon, od koder je bil obrazec odprt (Zemljevid/Seznam/Profil) –
       // ta zaslon ob fokusu (useFocusEffect) takoj naloži sveže podatke.
@@ -210,6 +293,26 @@ export default function AddPersonScreen() {
       setSavePhase('idle');
     }
   };
+
+  if (loadingExisting) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Ionicons name="alert-circle-outline" size={40} color={colors.textMuted} />
+        <Text style={styles.loadErrorText}>{loadError}</Text>
+        <Pressable style={styles.outlineBtn} onPress={() => navigation.goBack()}>
+          <Text style={styles.outlineBtnText}>Nazaj</Text>
+        </Pressable>
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -377,7 +480,9 @@ export default function AddPersonScreen() {
                 ? 'Nalagam fotografije …'
                 : saving
                   ? 'Shranjujem …'
-                  : 'Shrani v atlas'}
+                  : isEditing
+                    ? 'Shrani spremembe'
+                    : 'Shrani v atlas'}
           </Text>
         </Pressable>
       </ScrollView>
@@ -389,6 +494,25 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   screen: { flex: 1, backgroundColor: colors.background },
   content: { padding: 20, paddingBottom: 48, gap: 8 },
+
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+    gap: 12,
+  },
+  loadErrorText: { fontSize: 14, color: colors.textSecondary, textAlign: 'center' },
+  outlineBtn: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+  },
+  outlineBtnText: { fontSize: 14, fontWeight: '600', color: colors.textPrimary },
 
   privacyBanner: {
     flexDirection: 'row',

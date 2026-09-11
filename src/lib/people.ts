@@ -23,12 +23,18 @@ export type PeopleRow = {
   created_at: string;
 };
 
-/** Kar dejansko pošljemo v insert – brez polj, ki jih dodeli baza. */
-type PeopleInsert = Omit<PeopleRow, 'id' | 'created_at'>;
+/** Kar dejansko pošljemo v insert – brez polj, ki jih dodeli baza/insertPerson. */
+type PeopleInsert = Omit<PeopleRow, 'id' | 'created_at' | 'user_id'>;
+
+/**
+ * Polja, ki jih obrazec za urejanje sme spremeniti – brez user_id (lastništvo se ne
+ * spreminja) in brez met_date/met_location/tags (obrazec jih ne prikazuje, zato jih
+ * update ne sme prepisati na null).
+ */
+export type EditablePersonFields = Omit<PeopleInsert, 'met_date' | 'met_location' | 'tags'>;
 
 function draftToRow(draft: PersonDraft): PeopleInsert {
   return {
-    user_id: null, // dokler ni Auth
     first_name: draft.firstName,
     last_name: draft.lastName,
     photo_url: draft.photoUrl,
@@ -46,13 +52,23 @@ function draftToRow(draft: PersonDraft): PeopleInsert {
   };
 }
 
-/** Zapiše novo osebo v Supabase in vrne ustvarjeno vrstico. */
+/** Zapiše novo osebo v Supabase (z lastnikom = trenutni prijavljeni uporabnik) in vrne vrstico. */
 export async function insertPerson(draft: PersonDraft): Promise<PeopleRow> {
+  const { data: authData } = await supabase.auth.getUser();
+
   const { data, error } = await supabase
     .from('people')
-    .insert(draftToRow(draft))
+    .insert({ ...draftToRow(draft), user_id: authData.user?.id ?? null })
     .select()
     .single();
+
+  if (error) throw error;
+  return data as PeopleRow;
+}
+
+/** Posodobi obstoječo osebo (brez spreminjanja user_id) in vrne posodobljeno vrstico. */
+export async function updatePerson(id: string, fields: EditablePersonFields): Promise<PeopleRow> {
+  const { data, error } = await supabase.from('people').update(fields).eq('id', id).select().single();
 
   if (error) throw error;
   return data as PeopleRow;

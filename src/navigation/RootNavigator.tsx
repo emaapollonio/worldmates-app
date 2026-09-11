@@ -24,7 +24,10 @@ export default function RootNavigator() {
       <Stack.Screen
         name="AddPerson"
         component={AddPersonScreen}
-        options={{ title: 'Dodaj prijatelja', presentation: 'modal' }}
+        options={({ route }) => ({
+          title: route.params?.personId ? 'Uredi osebo' : 'Dodaj prijatelja',
+          presentation: 'modal',
+        })}
       />
       <Stack.Screen
         name="PersonProfile"

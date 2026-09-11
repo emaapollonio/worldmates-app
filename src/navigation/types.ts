@@ -18,7 +18,8 @@ export type TabParamList = {
  */
 export type RootStackParamList = {
   Tabs: NavigatorScreenParams<TabParamList> | undefined;
-  AddPerson: undefined;
+  /** personId prisoten = urejanje obstoječe osebe; odsoten = dodajanje nove. */
+  AddPerson: { personId?: string } | undefined;
   PersonProfile: { personId: string } | undefined;
 };
 

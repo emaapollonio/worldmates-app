@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
   Linking,
   StyleSheet,
 } from 'react-native';
-import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import ImageViewing from 'react-native-image-viewing';
@@ -75,34 +75,37 @@ export default function PersonProfileScreen() {
   const [deleting, setDeleting] = useState(false);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
-  useEffect(() => {
-    if (!personId) {
-      setError('Manjka personId v navigacijskih parametrih.');
-      setLoading(false);
-      return;
-    }
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const row = await getPerson(personId);
-        if (cancelled) return;
-        if (!row) setError('Osebe ni bilo mogoče najti.');
-        else setPerson(row);
-      } catch (e) {
-        if (!cancelled) {
-          console.error('[PersonProfile] nalaganje ni uspelo:', e);
-          setError(e instanceof Error ? e.message : 'Nalaganje ni uspelo.');
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
+  // Naloži ob vsakem fokusu – tako se po urejanju (AddPerson -> goBack) takoj vidijo sveže vrednosti.
+  useFocusEffect(
+    useCallback(() => {
+      if (!personId) {
+        setError('Manjka personId v navigacijskih parametrih.');
+        setLoading(false);
+        return;
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [personId]);
+      let cancelled = false;
+      (async () => {
+        setLoading(true);
+        setError(null);
+        try {
+          const row = await getPerson(personId);
+          if (cancelled) return;
+          if (!row) setError('Osebe ni bilo mogoče najti.');
+          else setPerson(row);
+        } catch (e) {
+          if (!cancelled) {
+            console.error('[PersonProfile] nalaganje ni uspelo:', e);
+            setError(e instanceof Error ? e.message : 'Nalaganje ni uspelo.');
+          }
+        } finally {
+          if (!cancelled) setLoading(false);
+        }
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }, [personId]),
+  );
 
   const onWrite = async () => {
     if (!person?.contact_value) {
@@ -123,8 +126,8 @@ export default function PersonProfileScreen() {
   };
 
   const onEdit = () => {
-    // Pravo urejanje (prednapolnjen obrazec) dodamo kasneje.
-    navigation.navigate('AddPerson');
+    if (!person) return;
+    navigation.navigate('AddPerson', { personId: person.id });
   };
 
   const onDelete = () => {
