@@ -15,9 +15,13 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import type { ContactType, PersonDraft } from '../types/person';
-import { insertPerson, type PeopleRow } from '../lib/people';
+import type { RootStackParamList } from '../navigation/types';
+import { insertPerson } from '../lib/people';
+import { uploadPersonPhotos } from '../lib/storage';
 import { colors } from '../theme/colors';
 
 /**
@@ -66,22 +70,29 @@ function describeError(e: unknown): string {
 }
 
 export default function AddPersonScreen() {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  /** Lokalni URI-ji (pred nalaganjem). Prva slika = profilna. */
+  const [photoUris, setPhotoUris] = useState<string[]>([]);
   const [country, setCountry] = useState('');
   const [city, setCity] = useState('');
   const [contactType, setContactType] = useState<ContactType>('whatsapp');
   const [contactValue, setContactValue] = useState('');
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
-  const [lastSaved, setLastSaved] = useState<PeopleRow | null>(null);
+  const [savePhase, setSavePhase] = useState<'idle' | 'uploading' | 'saving'>('idle');
 
   const activeContact = useMemo(
     () => CONTACT_OPTIONS.find((o) => o.type === contactType) ?? CONTACT_OPTIONS[0],
     [contactType],
   );
 
+  /**
+   * Dodaj eno (kamera) ali več (galerija) fotografij v `photoUris`.
+   * Če je bil seznam prazen, prva izbrana slika postane profilna (index 0).
+   */
   const pickFrom = async (source: 'camera' | 'library') => {
     try {
       if (source === 'camera') {
@@ -91,7 +102,9 @@ export default function AddPersonScreen() {
           return;
         }
         const res = await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [1, 1], quality: 0.7 });
-        if (!res.canceled) setPhotoUri(res.assets[0].uri);
+        if (!res.canceled) {
+          setPhotoUris((prev) => [...prev, res.assets[0].uri]);
+        }
       } else {
         const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (!perm.granted) {
@@ -100,11 +113,12 @@ export default function AddPersonScreen() {
         }
         const res = await ImagePicker.launchImageLibraryAsync({
           mediaTypes: ['images'],
-          allowsEditing: true,
-          aspect: [1, 1],
+          allowsMultipleSelection: true,
           quality: 0.7,
         });
-        if (!res.canceled) setPhotoUri(res.assets[0].uri);
+        if (!res.canceled) {
+          setPhotoUris((prev) => [...prev, ...res.assets.map((a) => a.uri)]);
+        }
       }
     } catch (e) {
       console.warn('[AddPerson] napaka pri izbiri fotografije', e);
@@ -113,20 +127,24 @@ export default function AddPersonScreen() {
   };
 
   const onPhotoPress = () => {
-    Alert.alert('Fotografija prijatelja', 'Izberi vir', [
+    Alert.alert('Fotografije prijatelja', 'Izberi vir (v galeriji lahko izbereš več naenkrat)', [
       { text: 'Kamera', onPress: () => pickFrom('camera') },
       { text: 'Galerija', onPress: () => pickFrom('library') },
-      ...(photoUri
-        ? [{ text: 'Odstrani fotografijo', style: 'destructive' as const, onPress: () => setPhotoUri(null) }]
+      ...(photoUris.length > 0
+        ? [{ text: 'Odstrani vse fotografije', style: 'destructive' as const, onPress: () => setPhotoUris([]) }]
         : []),
       { text: 'Prekliči', style: 'cancel' as const },
     ]);
   };
 
+  const removePhoto = (uri: string) => {
+    setPhotoUris((prev) => prev.filter((u) => u !== uri));
+  };
+
   const resetForm = () => {
     setFirstName('');
     setLastName('');
-    setPhotoUri(null);
+    setPhotoUris([]);
     setCountry('');
     setCity('');
     setContactType('whatsapp');
@@ -147,34 +165,44 @@ export default function AddPersonScreen() {
       return;
     }
 
-    const draft: PersonDraft = {
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-      photoUrl: photoUri,
-      country: country.trim(),
-      city: city.trim(),
-      latitude: TEST_COORDS.latitude,
-      longitude: TEST_COORDS.longitude,
-      contactType,
-      contactValue: contactValue.trim() || null,
-      note: note.trim() || null,
-      metDate: null,
-      metLocation: null,
-      tags: null,
-    };
-
     setSaving(true);
     try {
+      let uploadedUrls: string[] = [];
+      if (photoUris.length > 0) {
+        setSavePhase('uploading');
+        uploadedUrls = await uploadPersonPhotos(photoUris);
+      }
+      setSavePhase('saving');
+
+      const draft: PersonDraft = {
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        photoUrl: uploadedUrls[0] ?? null,
+        photoUrls: uploadedUrls.length > 0 ? uploadedUrls : null,
+        country: country.trim(),
+        city: city.trim(),
+        latitude: TEST_COORDS.latitude,
+        longitude: TEST_COORDS.longitude,
+        contactType,
+        contactValue: contactValue.trim() || null,
+        note: note.trim() || null,
+        metDate: null,
+        metLocation: null,
+        tags: null,
+      };
+
       const row = await insertPerson(draft);
-      setLastSaved(row);
       console.log('[AddPerson] shranjeno v Supabase:\n' + JSON.stringify(row, null, 2));
       resetForm();
-      Alert.alert('Shranjeno', `${row.first_name} ${row.last_name} je zapisan v Supabase (id: ${row.id}).`);
+      // Nazaj na zaslon, od koder je bil obrazec odprt (Zemljevid/Seznam/Profil) –
+      // ta zaslon ob fokusu (useFocusEffect) takoj naloži sveže podatke.
+      navigation.goBack();
     } catch (e) {
       console.error('[AddPerson] napaka pri shranjevanju v Supabase:', e);
       Alert.alert('Napaka pri shranjevanju', describeError(e));
     } finally {
       setSaving(false);
+      setSavePhase('idle');
     }
   };
 
@@ -196,13 +224,13 @@ export default function AddPersonScreen() {
         {/* Fotografija + ime/priimek */}
         <View style={styles.photoRow}>
           <Pressable style={styles.photo} onPress={onPhotoPress}>
-            {photoUri ? (
-              <Image source={{ uri: photoUri }} style={styles.photoImg} />
+            {photoUris[0] ? (
+              <Image source={{ uri: photoUris[0] }} style={styles.photoImg} />
             ) : (
               <Ionicons name="camera-outline" size={26} color={colors.textMuted} />
             )}
             <View style={styles.photoBadge}>
-              <Ionicons name={photoUri ? 'pencil' : 'add'} size={12} color={colors.onPrimary} />
+              <Ionicons name={photoUris[0] ? 'pencil' : 'add'} size={12} color={colors.onPrimary} />
             </View>
           </Pressable>
 
@@ -293,6 +321,23 @@ export default function AddPersonScreen() {
           autoCorrect={false}
         />
 
+        {/* Dodatne (spominske) fotografije */}
+        <Text style={styles.sectionTitle}>Fotografije</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.galleryRow}>
+          {photoUris.slice(1).map((uri) => (
+            <View key={uri} style={styles.galleryThumbWrap}>
+              <Image source={{ uri }} style={styles.galleryThumb} />
+              <Pressable style={styles.galleryRemoveBadge} onPress={() => removePhoto(uri)}>
+                <Ionicons name="close" size={12} color={colors.onPrimary} />
+              </Pressable>
+            </View>
+          ))}
+          <Pressable style={styles.addTile} onPress={onPhotoPress}>
+            <Ionicons name="add" size={22} color={colors.textMuted} />
+          </Pressable>
+        </ScrollView>
+        <Text style={styles.hint}>Prva dodana slika je profilna; tu dodaš še skupne spominske slike.</Text>
+
         {/* Beležka */}
         <Text style={styles.sectionTitle}>Zaznamki / opombe</Text>
         <TextInput
@@ -320,15 +365,10 @@ export default function AddPersonScreen() {
           ) : (
             <Ionicons name="earth" size={18} color={colors.onPrimary} />
           )}
-          <Text style={styles.saveBtnText}>{saving ? 'Shranjujem …' : 'Shrani v atlas'}</Text>
+          <Text style={styles.saveBtnText}>
+            {savePhase === 'uploading' ? 'Nalagam fotografije …' : saving ? 'Shranjujem …' : 'Shrani v atlas'}
+          </Text>
         </Pressable>
-
-        {lastSaved ? (
-          <View style={styles.debugBox}>
-            <Text style={styles.debugTitle}>Zadnji zapis v Supabase</Text>
-            <Text style={styles.debugText}>{JSON.stringify(lastSaved, null, 2)}</Text>
-          </View>
-        ) : null}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -419,6 +459,34 @@ const styles = StyleSheet.create({
   contactChipText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
   contactChipTextActive: { color: colors.onPrimary },
 
+  galleryRow: { gap: 10, paddingVertical: 2 },
+  galleryThumbWrap: { width: 64, height: 64 },
+  galleryThumb: { width: 64, height: 64, borderRadius: 12, backgroundColor: colors.surfaceMuted },
+  galleryRemoveBadge: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: colors.danger,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: colors.background,
+  },
+  addTile: {
+    width: 64,
+    height: 64,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
   saveBtn: {
     marginTop: 28,
     flexDirection: 'row',
@@ -432,15 +500,4 @@ const styles = StyleSheet.create({
   saveBtnPressed: { backgroundColor: colors.primaryDark },
   saveBtnDisabled: { opacity: 0.7 },
   saveBtnText: { color: colors.onPrimary, fontSize: 16, fontWeight: '700' },
-
-  debugBox: {
-    marginTop: 20,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    padding: 12,
-  },
-  debugTitle: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, marginBottom: 6 },
-  debugText: { fontSize: 11, color: colors.textPrimary, fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace' },
 });

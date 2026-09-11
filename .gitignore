@@ -34,6 +34,9 @@ yarn-error.*
 .env
 .env*.local
 
+# machine-specific dev preview config (e.g. local TLS/CA workarounds)
+.claude/launch.json
+
 # typescript
 *.tsbuildinfo
 

@@ -10,7 +10,10 @@ export interface Person {
   userId: string;
   firstName: string;
   lastName: string;
+  /** @deprecated obdrzano za nazaj zdruzljivost – uporabi photoUrls[0] */
   photoUrl: string | null;
+  /** Vse fotografije osebe (Supabase Storage javni URL-ji). Prva = profilna. */
+  photoUrls: string[] | null;
   country: string;
   city: string;
   latitude: number;

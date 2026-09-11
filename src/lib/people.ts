@@ -7,7 +7,9 @@ export type PeopleRow = {
   user_id: string | null;
   first_name: string;
   last_name: string;
+  /** @deprecated obdrzano za nazaj zdruzljivost – uporabi photo_urls[0] */
   photo_url: string | null;
+  photo_urls: string[] | null;
   country: string;
   city: string;
   latitude: number;
@@ -30,6 +32,7 @@ function draftToRow(draft: PersonDraft): PeopleInsert {
     first_name: draft.firstName,
     last_name: draft.lastName,
     photo_url: draft.photoUrl,
+    photo_urls: draft.photoUrls,
     country: draft.country,
     city: draft.city,
     latitude: draft.latitude,

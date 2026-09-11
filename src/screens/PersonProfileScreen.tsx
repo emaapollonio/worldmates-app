@@ -3,6 +3,7 @@ import {
   View,
   Text,
   Image,
+  FlatList,
   ScrollView,
   Pressable,
   ActivityIndicator,
@@ -13,6 +14,7 @@ import {
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
+import ImageViewing from 'react-native-image-viewing';
 
 import type { RootStackParamList } from '../navigation/types';
 import type { ContactType } from '../types/person';
@@ -71,6 +73,7 @@ export default function PersonProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
   useEffect(() => {
     if (!personId) {
@@ -173,13 +176,21 @@ export default function PersonProfileScreen() {
   const fullName = `${person.first_name} ${person.last_name}`;
   const hasContact = !!person.contact_value;
   const hasMeeting = !!person.met_date || !!person.met_location;
+  // photo_urls (novo, polje slik) ima prednost; photo_url (staro, ena slika) kot fallback.
+  const photos =
+    person.photo_urls && person.photo_urls.length > 0
+      ? person.photo_urls
+      : person.photo_url
+        ? [person.photo_url]
+        : [];
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+    <>
+      <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       {/* Glava */}
       <View style={styles.header}>
-        {person.photo_url ? (
-          <Image source={{ uri: person.photo_url }} style={styles.avatar} />
+        {photos[0] ? (
+          <Image source={{ uri: photos[0] }} style={styles.avatar} />
         ) : (
           <View style={[styles.avatar, styles.avatarPlaceholder]}>
             <Ionicons name="person" size={44} color={colors.textMuted} />
@@ -193,6 +204,23 @@ export default function PersonProfileScreen() {
           </Text>
         </View>
       </View>
+
+      {/* Galerija skupnih slik */}
+      {photos.length > 0 ? (
+        <FlatList
+          data={photos}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          keyExtractor={(uri, idx) => `${idx}-${uri}`}
+          contentContainerStyle={styles.galleryRow}
+          style={styles.galleryList}
+          renderItem={({ item, index }) => (
+            <Pressable onPress={() => setViewerIndex(index)}>
+              <Image source={{ uri: item }} style={styles.galleryThumb} />
+            </Pressable>
+          )}
+        />
+      ) : null}
 
       {/* Piši */}
       <Pressable
@@ -271,7 +299,15 @@ export default function PersonProfileScreen() {
           <Text style={styles.deleteBtnText}>Izbriši</Text>
         </Pressable>
       </View>
-    </ScrollView>
+      </ScrollView>
+
+      <ImageViewing
+        images={photos.map((uri) => ({ uri }))}
+        imageIndex={viewerIndex ?? 0}
+        visible={viewerIndex !== null}
+        onRequestClose={() => setViewerIndex(null)}
+      />
+    </>
   );
 }
 
@@ -299,6 +335,10 @@ const styles = StyleSheet.create({
   name: { marginTop: 12, fontSize: 22, fontWeight: '700', color: colors.textPrimary },
   locationRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 },
   location: { fontSize: 14, color: colors.textSecondary },
+
+  galleryList: { marginTop: 16, marginHorizontal: -20 },
+  galleryRow: { gap: 10, paddingHorizontal: 20 },
+  galleryThumb: { width: 72, height: 72, borderRadius: 14, backgroundColor: colors.surfaceMuted },
 
   writeBtn: {
     flexDirection: 'row',
