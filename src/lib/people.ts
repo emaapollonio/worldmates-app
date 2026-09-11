@@ -83,3 +83,18 @@ export async function deletePerson(id: string): Promise<void> {
   const { error } = await supabase.from('people').delete().eq('id', id);
   if (error) throw error;
 }
+
+/**
+ * Ali oseba ustreza iskalnemu nizu (case-insensitive, "vsebuje").
+ * Uporablja se na ListScreen in MapScreen, da je logika iskanja enotna.
+ */
+export function matchesQuery(person: PeopleRow, query: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  return (
+    person.first_name.toLowerCase().includes(q) ||
+    person.last_name.toLowerCase().includes(q) ||
+    person.country.toLowerCase().includes(q) ||
+    person.city.toLowerCase().includes(q)
+  );
+}

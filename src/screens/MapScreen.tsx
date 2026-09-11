@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, ActivityIndicator, Pressable, StyleSheet } from 'react-native';
 import MapView, { Marker, type Region } from 'react-native-maps';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -6,8 +6,9 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { RootStackParamList } from '../navigation/types';
-import { listPeople, type PeopleRow } from '../lib/people';
+import { listPeople, matchesQuery, type PeopleRow } from '../lib/people';
 import { colors } from '../theme/colors';
+import SearchBar from '../components/SearchBar';
 
 /** Privzeti pogled (širša Evropa), dokler nimamo oseb za uokvirjanje. */
 const INITIAL_REGION: Region = {
@@ -26,6 +27,7 @@ export default function MapScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mapReady, setMapReady] = useState(false);
+  const [query, setQuery] = useState('');
 
   const loadPeople = useCallback(async (signal?: { cancelled: boolean }) => {
     setLoading(true);
@@ -54,14 +56,18 @@ export default function MapScreen() {
     }, [loadPeople]),
   );
 
-  // Ko so osebe naložene in je zemljevid pripravljen, uokviri vse pine.
+  // Pini, ki ustrezajo iskanju (prazno iskanje = vsi).
+  const visiblePeople = useMemo(() => people.filter((p) => matchesQuery(p, query)), [people, query]);
+
+  // Ko so vidni pini na voljo in je zemljevid pripravljen, uokviri nanje
+  // (tudi ob iskanju – tako se pogled prilagodi na filtrirane rezultate).
   useEffect(() => {
-    if (!mapReady || people.length === 0) return;
+    if (!mapReady || visiblePeople.length === 0) return;
     mapRef.current?.fitToCoordinates(
-      people.map((p) => ({ latitude: p.latitude, longitude: p.longitude })),
+      visiblePeople.map((p) => ({ latitude: p.latitude, longitude: p.longitude })),
       { edgePadding: { top: 90, right: 90, bottom: 90, left: 90 }, animated: true },
     );
-  }, [mapReady, people]);
+  }, [mapReady, visiblePeople]);
 
   return (
     <View style={styles.container}>
@@ -71,7 +77,7 @@ export default function MapScreen() {
         initialRegion={INITIAL_REGION}
         onMapReady={() => setMapReady(true)}
       >
-        {people.map((p) => (
+        {visiblePeople.map((p) => (
           <Marker
             key={p.id}
             coordinate={{ latitude: p.latitude, longitude: p.longitude }}
@@ -82,34 +88,45 @@ export default function MapScreen() {
         ))}
       </MapView>
 
-      {/* Status: nalaganje */}
-      {loading && people.length === 0 ? (
-        <View style={[styles.pill, { top: insets.top + 12 }]}>
-          <ActivityIndicator size="small" color={colors.primary} />
-          <Text style={styles.pillText}>Nalagam osebe …</Text>
-        </View>
-      ) : null}
+      <View style={[styles.topOverlay, { top: insets.top + 12 }]}>
+        <SearchBar value={query} onChangeText={setQuery} />
 
-      {/* Status: napaka */}
-      {error ? (
-        <View style={[styles.card, { top: insets.top + 12 }]}>
-          <Text style={styles.cardTitle}>Napaka pri nalaganju</Text>
-          <Text style={styles.cardText}>{error}</Text>
-          <Pressable
-            style={({ pressed }) => [styles.retryBtn, pressed && styles.retryBtnPressed]}
-            onPress={() => loadPeople()}
-          >
-            <Text style={styles.retryBtnText}>Poskusi znova</Text>
-          </Pressable>
-        </View>
-      ) : null}
+        {/* Status: nalaganje */}
+        {loading && people.length === 0 ? (
+          <View style={styles.pill}>
+            <ActivityIndicator size="small" color={colors.primary} />
+            <Text style={styles.pillText}>Nalagam osebe …</Text>
+          </View>
+        ) : null}
 
-      {/* Status: brez oseb */}
-      {!loading && !error && people.length === 0 ? (
-        <View style={[styles.pill, { top: insets.top + 12 }]}>
-          <Text style={styles.pillText}>Nimaš še nobene osebe — dodaj prvo z gumbom +</Text>
-        </View>
-      ) : null}
+        {/* Status: napaka */}
+        {error ? (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Napaka pri nalaganju</Text>
+            <Text style={styles.cardText}>{error}</Text>
+            <Pressable
+              style={({ pressed }) => [styles.retryBtn, pressed && styles.retryBtnPressed]}
+              onPress={() => loadPeople()}
+            >
+              <Text style={styles.retryBtnText}>Poskusi znova</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
+        {/* Status: brez oseb (sploh) */}
+        {!loading && !error && people.length === 0 ? (
+          <View style={styles.pill}>
+            <Text style={styles.pillText}>Nimaš še nobene osebe — dodaj prvo z gumbom +</Text>
+          </View>
+        ) : null}
+
+        {/* Status: iskanje brez zadetkov */}
+        {!loading && !error && people.length > 0 && query.trim().length > 0 && visiblePeople.length === 0 ? (
+          <View style={styles.pill}>
+            <Text style={styles.pillText}>Ni zadetkov za "{query.trim()}".</Text>
+          </View>
+        ) : null}
+      </View>
     </View>
   );
 }
@@ -117,13 +134,19 @@ export default function MapScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
 
-  pill: {
+  topOverlay: {
     position: 'absolute',
-    alignSelf: 'center',
+    left: 16,
+    right: 16,
+    gap: 10,
+  },
+
+  pill: {
     flexDirection: 'row',
     alignItems: 'center',
+    alignSelf: 'center',
     gap: 8,
-    maxWidth: '90%',
+    maxWidth: '100%',
     backgroundColor: colors.surface,
     borderRadius: 999,
     paddingVertical: 10,
@@ -137,9 +160,6 @@ const styles = StyleSheet.create({
   pillText: { fontSize: 13, color: colors.textPrimary, flexShrink: 1 },
 
   card: {
-    position: 'absolute',
-    alignSelf: 'center',
-    width: '90%',
     backgroundColor: colors.surface,
     borderRadius: 14,
     padding: 16,
