@@ -6,9 +6,10 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { RootStackParamList } from '../navigation/types';
-import { listPeople, matchesQuery, type PeopleRow } from '../lib/people';
+import { listPeople, matchesQuery, matchesTags, collectUniqueTags, type PeopleRow } from '../lib/people';
 import { colors, colorForLetter } from '../theme/colors';
 import SearchBar from '../components/SearchBar';
+import TagFilterRow from '../components/TagFilterRow';
 
 /** Ob prvem odprtju je zemljevid oddaljen na cel svet – uporabnik nato sam zoom-a. */
 const INITIAL_REGION: Region = {
@@ -65,6 +66,7 @@ export default function MapScreen() {
   const [error, setError] = useState<string | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const [query, setQuery] = useState('');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [latitudeDelta, setLatitudeDelta] = useState(INITIAL_REGION.latitudeDelta);
 
   const loadPeople = useCallback(async (signal?: { cancelled: boolean }) => {
@@ -94,18 +96,28 @@ export default function MapScreen() {
     }, [loadPeople]),
   );
 
-  // Pini, ki ustrezajo iskanju (prazno iskanje = vsi).
-  const visiblePeople = useMemo(() => people.filter((p) => matchesQuery(p, query)), [people, query]);
+  const uniqueTags = useMemo(() => collectUniqueTags(people), [people]);
+
+  const toggleTag = (tag: string) => {
+    setSelectedTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
+  };
+
+  // Pini, ki ustrezajo iskanju IN izbranim tagom (prazno iskanje/izbira = vsi).
+  const visiblePeople = useMemo(
+    () => people.filter((p) => matchesQuery(p, query) && matchesTags(p, selectedTags)),
+    [people, query, selectedTags],
+  );
+  const hasActiveFilter = query.trim().length > 0 || selectedTags.length > 0;
 
   // Ob prvem odprtju ostane zemljevid oddaljen na cel svet (INITIAL_REGION).
-  // Samo med aktivnim iskanjem se pogled prilagodi na filtrirane rezultate.
+  // Samo med aktivnim iskanjem/filtrom se pogled prilagodi na rezultate.
   useEffect(() => {
-    if (!mapReady || query.trim().length === 0 || visiblePeople.length === 0) return;
+    if (!mapReady || !hasActiveFilter || visiblePeople.length === 0) return;
     mapRef.current?.fitToCoordinates(
       visiblePeople.map((p) => ({ latitude: p.latitude, longitude: p.longitude })),
       { edgePadding: { top: 90, right: 90, bottom: 90, left: 90 }, animated: true },
     );
-  }, [mapReady, query, visiblePeople]);
+  }, [mapReady, hasActiveFilter, visiblePeople]);
 
   const onMapReady = () => {
     setMapReady(true);
@@ -146,6 +158,10 @@ export default function MapScreen() {
       <SafeAreaView edges={['top']} style={styles.topOverlay}>
         <SearchBar value={query} onChangeText={setQuery} />
 
+        {uniqueTags.length > 0 ? (
+          <TagFilterRow tags={uniqueTags} selected={selectedTags} onToggle={toggleTag} />
+        ) : null}
+
         {/* Status: nalaganje */}
         {loading && people.length === 0 ? (
           <View style={styles.pill}>
@@ -175,10 +191,10 @@ export default function MapScreen() {
           </View>
         ) : null}
 
-        {/* Status: iskanje brez zadetkov */}
-        {!loading && !error && people.length > 0 && query.trim().length > 0 && visiblePeople.length === 0 ? (
+        {/* Status: iskanje/filter brez zadetkov */}
+        {!loading && !error && people.length > 0 && hasActiveFilter && visiblePeople.length === 0 ? (
           <View style={styles.pill}>
-            <Text style={styles.pillText}>Ni zadetkov za "{query.trim()}".</Text>
+            <Text style={styles.pillText}>Ni zadetkov za izbrano iskanje/filter.</Text>
           </View>
         ) : null}
       </SafeAreaView>

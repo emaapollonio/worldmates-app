@@ -84,6 +84,8 @@ export default function AddPersonScreen() {
   const [contactType, setContactType] = useState<ContactType>('whatsapp');
   const [contactValue, setContactValue] = useState('');
   const [note, setNote] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState('');
   const [saving, setSaving] = useState(false);
   const [savePhase, setSavePhase] = useState<'idle' | 'geocoding' | 'uploading' | 'saving'>('idle');
   const [loadingExisting, setLoadingExisting] = useState(isEditing);
@@ -110,6 +112,7 @@ export default function AddPersonScreen() {
         setContactType(row.contact_type);
         setContactValue(row.contact_value ?? '');
         setNote(row.note ?? '');
+        setTags(row.tags ?? []);
         setPhotoUris(row.photo_urls && row.photo_urls.length > 0 ? row.photo_urls : row.photo_url ? [row.photo_url] : []);
       } catch (e) {
         if (!cancelled) {
@@ -182,6 +185,33 @@ export default function AddPersonScreen() {
     setPhotoUris((prev) => prev.filter((u) => u !== uri));
   };
 
+  /** Doda tag (brez podvajanja) in počisti vnosno polje. */
+  const addTag = (raw: string) => {
+    const value = raw.trim();
+    if (!value) return;
+    setTags((prev) => (prev.includes(value) ? prev : [...prev, value]));
+  };
+
+  /** Uporabnik lahko tage loči tudi z vejico med tipkanjem, ne le z Enter. */
+  const onTagInputChange = (text: string) => {
+    if (text.includes(',')) {
+      const parts = text.split(',');
+      parts.slice(0, -1).forEach(addTag);
+      setTagInput(parts[parts.length - 1]);
+    } else {
+      setTagInput(text);
+    }
+  };
+
+  const onTagSubmit = () => {
+    addTag(tagInput);
+    setTagInput('');
+  };
+
+  const removeTag = (tag: string) => {
+    setTags((prev) => prev.filter((t) => t !== tag));
+  };
+
   const resetForm = () => {
     setFirstName('');
     setLastName('');
@@ -191,6 +221,8 @@ export default function AddPersonScreen() {
     setContactType('whatsapp');
     setContactValue('');
     setNote('');
+    setTags([]);
+    setTagInput('');
   };
 
   const onSave = async () => {
@@ -244,6 +276,9 @@ export default function AddPersonScreen() {
       const photoUrlsField = finalUrls.length > 0 ? finalUrls : null;
       const trimmedContactValue = contactValue.trim() || null;
       const trimmedNote = note.trim() || null;
+      // Ce je uporabnik nekaj natipkal, a ni pritisnil Enter/vejice, to se vseeno stejemo kot tag.
+      const finalTags = tagInput.trim() ? [...tags, tagInput.trim()] : tags;
+      const tagsField = finalTags.length > 0 ? finalTags : null;
 
       if (isEditing && personId) {
         const fields: EditablePersonFields = {
@@ -258,6 +293,7 @@ export default function AddPersonScreen() {
           contact_type: contactType,
           contact_value: trimmedContactValue,
           note: trimmedNote,
+          tags: tagsField,
         };
         const row = await updatePerson(personId, fields);
         console.log('[AddPerson] posodobljeno v Supabase:\n' + JSON.stringify(row, null, 2));
@@ -276,7 +312,7 @@ export default function AddPersonScreen() {
           note: trimmedNote,
           metDate: null,
           metLocation: null,
-          tags: null,
+          tags: tagsField,
         };
         const row = await insertPerson(draft);
         console.log('[AddPerson] shranjeno v Supabase:\n' + JSON.stringify(row, null, 2));
@@ -445,6 +481,33 @@ export default function AddPersonScreen() {
           </Pressable>
         </ScrollView>
         <Text style={styles.hint}>Prva dodana slika je profilna; tu dodaš še skupne spominske slike.</Text>
+
+        {/* Tagi */}
+        <Text style={styles.sectionTitle}>Tagi</Text>
+        {tags.length > 0 ? (
+          <View style={styles.tagRow}>
+            {tags.map((tag) => (
+              <View key={tag} style={styles.tagChip}>
+                <Text style={styles.tagChipText}>{tag}</Text>
+                <Pressable onPress={() => removeTag(tag)} hitSlop={6}>
+                  <Ionicons name="close" size={13} color={colors.onPrimary} />
+                </Pressable>
+              </View>
+            ))}
+          </View>
+        ) : null}
+        <TextInput
+          style={styles.input}
+          value={tagInput}
+          onChangeText={onTagInputChange}
+          onSubmitEditing={onTagSubmit}
+          placeholder="npr. hostel, sopotnik (Enter ali vejica doda tag)"
+          placeholderTextColor={colors.textMuted}
+          autoCapitalize="none"
+          autoCorrect={false}
+          returnKeyType="done"
+          blurOnSubmit={false}
+        />
 
         {/* Beležka */}
         <Text style={styles.sectionTitle}>Zaznamki / opombe</Text>
@@ -621,6 +684,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+
+  tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
+  tagChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    backgroundColor: colors.accent,
+  },
+  tagChipText: { fontSize: 12, fontWeight: '600', color: colors.onPrimary },
 
   saveBtn: {
     marginTop: 28,

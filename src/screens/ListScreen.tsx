@@ -6,9 +6,10 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 
 import type { RootStackParamList } from '../navigation/types';
-import { listPeople, matchesQuery, type PeopleRow } from '../lib/people';
+import { listPeople, matchesQuery, matchesTags, collectUniqueTags, type PeopleRow } from '../lib/people';
 import { colors } from '../theme/colors';
 import SearchBar from '../components/SearchBar';
+import TagFilterRow from '../components/TagFilterRow';
 
 type SortKey = 'alpha' | 'metDate' | 'country';
 
@@ -48,6 +49,7 @@ export default function ListScreen() {
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('alpha');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   const load = useCallback(async (signal?: { cancelled: boolean }) => {
     setLoading(true);
@@ -76,16 +78,28 @@ export default function ListScreen() {
     }, [load]),
   );
 
+  const uniqueTags = useMemo(() => collectUniqueTags(people), [people]);
+
+  const toggleTag = (tag: string) => {
+    setSelectedTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
+  };
+
   const visiblePeople = useMemo(() => {
-    const matched = people.filter((p) => matchesQuery(p, query));
+    const matched = people.filter((p) => matchesQuery(p, query) && matchesTags(p, selectedTags));
     return sortPeople(matched, sortKey);
-  }, [people, query, sortKey]);
+  }, [people, query, selectedTags, sortKey]);
 
   return (
     <SafeAreaView edges={['top']} style={styles.screen}>
       <View style={styles.topBar}>
         <SearchBar value={query} onChangeText={setQuery} />
       </View>
+
+      {uniqueTags.length > 0 ? (
+        <View style={styles.tagFilterBar}>
+          <TagFilterRow tags={uniqueTags} selected={selectedTags} onToggle={toggleTag} />
+        </View>
+      ) : null}
 
       <View style={styles.sortRow}>
         <Text style={styles.sortLabel}>Razvrsti:</Text>
@@ -123,7 +137,9 @@ export default function ListScreen() {
           ListEmptyComponent={
             <View style={styles.centered}>
               <Text style={styles.emptyText}>
-                {query ? 'Ni zadetkov za tvoje iskanje.' : 'Nimaš še nobene osebe — dodaj prvo z gumbom +.'}
+                {query || selectedTags.length > 0
+                  ? 'Ni zadetkov za tvoje iskanje/filter.'
+                  : 'Nimaš še nobene osebe — dodaj prvo z gumbom +.'}
               </Text>
             </View>
           }
@@ -159,6 +175,7 @@ export default function ListScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
   topBar: { paddingHorizontal: 16, paddingTop: 12 },
+  tagFilterBar: { paddingLeft: 16, paddingTop: 10 },
 
   sortRow: {
     flexDirection: 'row',

@@ -28,10 +28,10 @@ type PeopleInsert = Omit<PeopleRow, 'id' | 'created_at' | 'user_id'>;
 
 /**
  * Polja, ki jih obrazec za urejanje sme spremeniti – brez user_id (lastništvo se ne
- * spreminja) in brez met_date/met_location/tags (obrazec jih ne prikazuje, zato jih
- * update ne sme prepisati na null).
+ * spreminja) in brez met_date/met_location (obrazec jih ne prikazuje, zato jih update
+ * ne sme prepisati na null). Tagi so del obrazca, zato ostanejo vključeni.
  */
-export type EditablePersonFields = Omit<PeopleInsert, 'met_date' | 'met_location' | 'tags'>;
+export type EditablePersonFields = Omit<PeopleInsert, 'met_date' | 'met_location'>;
 
 function draftToRow(draft: PersonDraft): PeopleInsert {
   return {
@@ -116,4 +116,28 @@ export function matchesQuery(person: PeopleRow, query: string): boolean {
     person.country.toLowerCase().includes(q) ||
     person.city.toLowerCase().includes(q)
   );
+}
+
+/** Ali ima oseba vsaj enega od izbranih tagov. Prazna izbira = ujema vsem. */
+export function matchesTags(person: PeopleRow, selectedTags: string[]): boolean {
+  if (selectedTags.length === 0) return true;
+  const personTags = person.tags ?? [];
+  return selectedTags.some((tag) => personTags.includes(tag));
+}
+
+/** Vsi unikatni tagi med osebami, abecedno urejeni. */
+export function collectUniqueTags(people: PeopleRow[]): string[] {
+  const set = new Set<string>();
+  people.forEach((p) => (p.tags ?? []).forEach((tag) => set.add(tag)));
+  return Array.from(set).sort((a, b) => a.localeCompare(b, 'sl'));
+}
+
+/**
+ * Ali oseba živi v kraju/državi, ki ustreza iskalnemu nizu (case-insensitive, "vsebuje").
+ * Za razliko od matchesQuery NE preverja imena – uporablja se za "Potovanja".
+ */
+export function matchesLocation(person: PeopleRow, query: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return false;
+  return person.country.toLowerCase().includes(q) || person.city.toLowerCase().includes(q);
 }
