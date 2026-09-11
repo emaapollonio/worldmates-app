@@ -22,13 +22,8 @@ import type { ContactType, PersonDraft } from '../types/person';
 import type { RootStackParamList } from '../navigation/types';
 import { insertPerson } from '../lib/people';
 import { uploadPersonPhotos } from '../lib/storage';
+import { geocodeLocation } from '../lib/geocoding';
 import { colors } from '../theme/colors';
-
-/**
- * Zacasne fiksne koordinate, dokler ne dodamo pravega geokodiranja (Faza kasneje).
- * Trenutno vsak nov vnos dobi te iste koordinate.
- */
-const TEST_COORDS = { latitude: 46.0569, longitude: 14.5058 }; // Ljubljana
 
 type ContactOption = {
   type: ContactType;
@@ -82,7 +77,7 @@ export default function AddPersonScreen() {
   const [contactValue, setContactValue] = useState('');
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
-  const [savePhase, setSavePhase] = useState<'idle' | 'uploading' | 'saving'>('idle');
+  const [savePhase, setSavePhase] = useState<'idle' | 'geocoding' | 'uploading' | 'saving'>('idle');
 
   const activeContact = useMemo(
     () => CONTACT_OPTIONS.find((o) => o.type === contactType) ?? CONTACT_OPTIONS[0],
@@ -167,6 +162,16 @@ export default function AddPersonScreen() {
 
     setSaving(true);
     try {
+      setSavePhase('geocoding');
+      const location = await geocodeLocation(city.trim(), country.trim());
+      if (!location) {
+        Alert.alert(
+          'Lokacije ni bilo mogoče najti',
+          `Za "${city.trim()}, ${country.trim()}" nismo našli koordinat. Preveri zapis kraja/države in poskusi znova.`,
+        );
+        return;
+      }
+
       let uploadedUrls: string[] = [];
       if (photoUris.length > 0) {
         setSavePhase('uploading');
@@ -181,8 +186,8 @@ export default function AddPersonScreen() {
         photoUrls: uploadedUrls.length > 0 ? uploadedUrls : null,
         country: country.trim(),
         city: city.trim(),
-        latitude: TEST_COORDS.latitude,
-        longitude: TEST_COORDS.longitude,
+        latitude: location.latitude,
+        longitude: location.longitude,
         contactType,
         contactValue: contactValue.trim() || null,
         note: note.trim() || null,
@@ -283,8 +288,8 @@ export default function AddPersonScreen() {
           </View>
         </View>
         <Text style={styles.hint}>
-          Iskalnik lokacij z avtomatskimi koordinatami pride kasneje. Za zdaj vsak vnos dobi testne
-          koordinate {TEST_COORDS.latitude}, {TEST_COORDS.longitude}.
+          Koordinate se ob shranjevanju samodejno poiščejo (OpenStreetMap / Nominatim) glede na
+          vpisano državo in kraj.
         </Text>
 
         {/* Kontakt */}
@@ -366,7 +371,13 @@ export default function AddPersonScreen() {
             <Ionicons name="earth" size={18} color={colors.onPrimary} />
           )}
           <Text style={styles.saveBtnText}>
-            {savePhase === 'uploading' ? 'Nalagam fotografije …' : saving ? 'Shranjujem …' : 'Shrani v atlas'}
+            {savePhase === 'geocoding'
+              ? 'Iščem lokacijo …'
+              : savePhase === 'uploading'
+                ? 'Nalagam fotografije …'
+                : saving
+                  ? 'Shranjujem …'
+                  : 'Shrani v atlas'}
           </Text>
         </Pressable>
       </ScrollView>

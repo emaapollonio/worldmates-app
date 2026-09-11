@@ -205,23 +205,6 @@ export default function PersonProfileScreen() {
         </View>
       </View>
 
-      {/* Galerija skupnih slik */}
-      {photos.length > 0 ? (
-        <FlatList
-          data={photos}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          keyExtractor={(uri, idx) => `${idx}-${uri}`}
-          contentContainerStyle={styles.galleryRow}
-          style={styles.galleryList}
-          renderItem={({ item, index }) => (
-            <Pressable onPress={() => setViewerIndex(index)}>
-              <Image source={{ uri: item }} style={styles.galleryThumb} />
-            </Pressable>
-          )}
-        />
-      ) : null}
-
       {/* Piši */}
       <Pressable
         style={({ pressed }) => [
@@ -274,6 +257,26 @@ export default function PersonProfileScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Opombe</Text>
           <Text style={styles.sectionText}>{person.note}</Text>
+        </View>
+      ) : null}
+
+      {/* Galerija skupnih slik */}
+      {photos.length > 0 ? (
+        <View style={styles.gallerySection}>
+          <Text style={styles.sectionTitle}>Galerija slik</Text>
+          <FlatList
+            data={photos}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyExtractor={(uri, idx) => `${idx}-${uri}`}
+            contentContainerStyle={styles.galleryRow}
+            style={styles.galleryList}
+            renderItem={({ item, index }) => (
+              <Pressable onPress={() => setViewerIndex(index)}>
+                <Image source={{ uri: item }} style={styles.galleryThumb} />
+              </Pressable>
+            )}
+          />
         </View>
       ) : null}
 
@@ -336,7 +339,8 @@ const styles = StyleSheet.create({
   locationRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 },
   location: { fontSize: 14, color: colors.textSecondary },
 
-  galleryList: { marginTop: 16, marginHorizontal: -20 },
+  gallerySection: { marginTop: 18 },
+  galleryList: { marginTop: 8, marginHorizontal: -20 },
   galleryRow: { gap: 10, paddingHorizontal: 20 },
   galleryThumb: { width: 72, height: 72, borderRadius: 14, backgroundColor: colors.surfaceMuted },
 
