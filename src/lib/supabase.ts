@@ -1,12 +1,12 @@
 import 'react-native-url-polyfill/auto';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 
 /**
  * Supabase klient za WorldMate.
- *
  * URL in anon ključ prideta iz .env (EXPO_PUBLIC_* → Expo ju vgradi ob buildu).
- * Auth (prijava + shranjevanje seje) dodamo v naslednjem koraku; takrat sem
- * pride še varen storage adapter in `persistSession: true`.
+ * Seja (prijava) se shrani v AsyncStorage, da uporabnika ob ponovnem
+ * zagonu ni treba znova prijavljati.
  */
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
@@ -20,8 +20,9 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    persistSession: false,
-    autoRefreshToken: false,
+    storage: AsyncStorage,
+    persistSession: true,
+    autoRefreshToken: true,
     detectSessionInUrl: false,
   },
 });

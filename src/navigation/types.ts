@@ -17,6 +17,7 @@ export type TabParamList = {
  * Korenski stack – vsebuje tab navigacijo in zaslone, ki se odprejo "čez" (push/modal).
  */
 export type RootStackParamList = {
+  Auth: undefined;
   Tabs: NavigatorScreenParams<TabParamList> | undefined;
   /** personId prisoten = urejanje obstoječe osebe; odsoten = dodajanje nove. */
   AddPerson: { personId?: string } | undefined;
