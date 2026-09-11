@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, Image, FlatList, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -81,7 +82,7 @@ export default function ListScreen() {
   }, [people, query, sortKey]);
 
   return (
-    <View style={styles.screen}>
+    <SafeAreaView edges={['top']} style={styles.screen}>
       <View style={styles.topBar}>
         <SearchBar value={query} onChangeText={setQuery} />
       </View>
@@ -151,7 +152,7 @@ export default function ListScreen() {
           )}
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 

@@ -3,7 +3,7 @@ import { View, Text, Image, ActivityIndicator, Pressable, StyleSheet } from 'rea
 import MapView, { Marker, type Region } from 'react-native-maps';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { RootStackParamList } from '../navigation/types';
 import { listPeople, matchesQuery, type PeopleRow } from '../lib/people';
@@ -51,7 +51,6 @@ function PersonMarker({ person, onPress }: { person: PeopleRow; onPress: () => v
 
 export default function MapScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const insets = useSafeAreaInsets();
   const mapRef = useRef<MapView>(null);
 
   const [people, setPeople] = useState<PeopleRow[]>([]);
@@ -100,13 +99,21 @@ export default function MapScreen() {
     );
   }, [mapReady, query, visiblePeople]);
 
+  const onMapReady = () => {
+    setMapReady(true);
+    // `initialRegion` je namenjen samo prvemu izrisu, a se pri react-native-maps
+    // (zlasti po Fast Refresh / na nekaterih napravah) ne uveljavi zanesljivo –
+    // zato ob pripravljenem zemljevidu svetovni pogled vsilimo tudi eksplicitno.
+    mapRef.current?.animateToRegion(INITIAL_REGION, 0);
+  };
+
   return (
     <View style={styles.container}>
       <MapView
         ref={mapRef}
         style={StyleSheet.absoluteFill}
         initialRegion={INITIAL_REGION}
-        onMapReady={() => setMapReady(true)}
+        onMapReady={onMapReady}
       >
         {visiblePeople.map((p) => (
           <PersonMarker
@@ -117,7 +124,7 @@ export default function MapScreen() {
         ))}
       </MapView>
 
-      <View style={[styles.topOverlay, { top: insets.top + 12 }]}>
+      <SafeAreaView edges={['top']} style={styles.topOverlay}>
         <SearchBar value={query} onChangeText={setQuery} />
 
         {/* Status: nalaganje */}
@@ -155,7 +162,7 @@ export default function MapScreen() {
             <Text style={styles.pillText}>Ni zadetkov za "{query.trim()}".</Text>
           </View>
         ) : null}
-      </View>
+      </SafeAreaView>
     </View>
   );
 }
@@ -165,8 +172,11 @@ const styles = StyleSheet.create({
 
   topOverlay: {
     position: 'absolute',
-    left: 16,
-    right: 16,
+    top: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 16,
+    paddingTop: 12,
     gap: 10,
   },
 
