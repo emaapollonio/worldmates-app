@@ -18,6 +18,13 @@ const INITIAL_REGION: Region = {
   longitudeDelta: 180,
 };
 
+/**
+ * Pod tem latitudeDelta (bolj približan pogled) se prikažejo podrobni pini
+ * (fotografija/začetnica); nad tem (oddaljen, svetovni pogled) enostavni
+ * privzeti rdeči pini, ker so podrobnosti pri takem pogledu vizualno prehitre.
+ */
+const DETAILED_ZOOM_THRESHOLD = 20;
+
 /** Okrogel pin: fotografija osebe (prva iz photo_urls / stari photo_url) ali začetnica imena. */
 function PersonMarker({ person, onPress }: { person: PeopleRow; onPress: () => void }) {
   const photoUrl = person.photo_urls?.[0] ?? person.photo_url ?? null;
@@ -58,6 +65,7 @@ export default function MapScreen() {
   const [error, setError] = useState<string | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const [query, setQuery] = useState('');
+  const [latitudeDelta, setLatitudeDelta] = useState(INITIAL_REGION.latitudeDelta);
 
   const loadPeople = useCallback(async (signal?: { cancelled: boolean }) => {
     setLoading(true);
@@ -107,6 +115,10 @@ export default function MapScreen() {
     mapRef.current?.animateToRegion(INITIAL_REGION, 0);
   };
 
+  const goToProfile = (personId: string) => navigation.navigate('PersonProfile', { personId });
+
+  const isDetailedZoom = latitudeDelta < DETAILED_ZOOM_THRESHOLD;
+
   return (
     <View style={styles.container}>
       <MapView
@@ -114,14 +126,21 @@ export default function MapScreen() {
         style={StyleSheet.absoluteFill}
         initialRegion={INITIAL_REGION}
         onMapReady={onMapReady}
+        onRegionChangeComplete={(region) => setLatitudeDelta(region.latitudeDelta)}
       >
-        {visiblePeople.map((p) => (
-          <PersonMarker
-            key={p.id}
-            person={p}
-            onPress={() => navigation.navigate('PersonProfile', { personId: p.id })}
-          />
-        ))}
+        {visiblePeople.map((p) =>
+          isDetailedZoom ? (
+            <PersonMarker key={p.id} person={p} onPress={() => goToProfile(p.id)} />
+          ) : (
+            <Marker
+              key={p.id}
+              coordinate={{ latitude: p.latitude, longitude: p.longitude }}
+              title={`${p.first_name} ${p.last_name}`}
+              description={`${p.city}, ${p.country}`}
+              onPress={() => goToProfile(p.id)}
+            />
+          ),
+        )}
       </MapView>
 
       <SafeAreaView edges={['top']} style={styles.topOverlay}>
