@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, ActivityIndicator, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Image, ActivityIndicator, Pressable, StyleSheet } from 'react-native';
 import MapView, { Marker, type Region } from 'react-native-maps';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -7,16 +7,47 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { RootStackParamList } from '../navigation/types';
 import { listPeople, matchesQuery, type PeopleRow } from '../lib/people';
-import { colors } from '../theme/colors';
+import { colors, colorForLetter } from '../theme/colors';
 import SearchBar from '../components/SearchBar';
 
-/** Privzeti pogled (širša Evropa), dokler nimamo oseb za uokvirjanje. */
+/** Ob prvem odprtju je zemljevid oddaljen na cel svet – uporabnik nato sam zoom-a. */
 const INITIAL_REGION: Region = {
-  latitude: 47,
-  longitude: 12,
-  latitudeDelta: 40,
-  longitudeDelta: 40,
+  latitude: 20,
+  longitude: 0,
+  latitudeDelta: 90,
+  longitudeDelta: 180,
 };
+
+/** Okrogel pin: fotografija osebe (prva iz photo_urls / stari photo_url) ali začetnica imena. */
+function PersonMarker({ person, onPress }: { person: PeopleRow; onPress: () => void }) {
+  const photoUrl = person.photo_urls?.[0] ?? person.photo_url ?? null;
+  const [tracksViewChanges, setTracksViewChanges] = useState(!!photoUrl);
+
+  return (
+    <Marker
+      coordinate={{ latitude: person.latitude, longitude: person.longitude }}
+      title={`${person.first_name} ${person.last_name}`}
+      description={`${person.city}, ${person.country}`}
+      onPress={onPress}
+      tracksViewChanges={tracksViewChanges}
+    >
+      <View style={styles.markerRing}>
+        {photoUrl ? (
+          <Image
+            source={{ uri: photoUrl }}
+            style={styles.markerPhoto}
+            onLoad={() => setTracksViewChanges(false)}
+            onError={() => setTracksViewChanges(false)}
+          />
+        ) : (
+          <View style={[styles.markerLetterWrap, { backgroundColor: colorForLetter(person.first_name[0] ?? '?') }]}>
+            <Text style={styles.markerLetterText}>{(person.first_name[0] ?? '?').toUpperCase()}</Text>
+          </View>
+        )}
+      </View>
+    </Marker>
+  );
+}
 
 export default function MapScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -59,15 +90,15 @@ export default function MapScreen() {
   // Pini, ki ustrezajo iskanju (prazno iskanje = vsi).
   const visiblePeople = useMemo(() => people.filter((p) => matchesQuery(p, query)), [people, query]);
 
-  // Ko so vidni pini na voljo in je zemljevid pripravljen, uokviri nanje
-  // (tudi ob iskanju – tako se pogled prilagodi na filtrirane rezultate).
+  // Ob prvem odprtju ostane zemljevid oddaljen na cel svet (INITIAL_REGION).
+  // Samo med aktivnim iskanjem se pogled prilagodi na filtrirane rezultate.
   useEffect(() => {
-    if (!mapReady || visiblePeople.length === 0) return;
+    if (!mapReady || query.trim().length === 0 || visiblePeople.length === 0) return;
     mapRef.current?.fitToCoordinates(
       visiblePeople.map((p) => ({ latitude: p.latitude, longitude: p.longitude })),
       { edgePadding: { top: 90, right: 90, bottom: 90, left: 90 }, animated: true },
     );
-  }, [mapReady, visiblePeople]);
+  }, [mapReady, query, visiblePeople]);
 
   return (
     <View style={styles.container}>
@@ -78,11 +109,9 @@ export default function MapScreen() {
         onMapReady={() => setMapReady(true)}
       >
         {visiblePeople.map((p) => (
-          <Marker
+          <PersonMarker
             key={p.id}
-            coordinate={{ latitude: p.latitude, longitude: p.longitude }}
-            title={`${p.first_name} ${p.last_name}`}
-            description={`${p.city}, ${p.country}`}
+            person={p}
             onPress={() => navigation.navigate('PersonProfile', { personId: p.id })}
           />
         ))}
@@ -182,4 +211,22 @@ const styles = StyleSheet.create({
   },
   retryBtnPressed: { backgroundColor: colors.primaryDark },
   retryBtnText: { color: colors.onPrimary, fontWeight: '600', fontSize: 13 },
+
+  markerRing: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 2,
+    borderColor: colors.surface,
+    overflow: 'hidden',
+    backgroundColor: colors.surfaceMuted,
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 3,
+  },
+  markerPhoto: { width: '100%', height: '100%', borderRadius: 16 },
+  markerLetterWrap: { width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' },
+  markerLetterText: { color: colors.onPrimary, fontWeight: '700', fontSize: 14 },
 });

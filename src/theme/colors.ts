@@ -30,3 +30,20 @@ export const colors = {
 } as const;
 
 export type AppColors = typeof colors;
+
+/** Nabor barv za avatarje brez fotografije (npr. pini na zemljevidu). */
+export const avatarPalette = [
+  '#C0562B', // terakota
+  '#5B7551', // oljčna
+  '#7FA9C9', // modra
+  '#B98B4E', // gorčica
+  '#8E6C88', // slivova
+  '#4C8C86', // petrolej
+] as const;
+
+/** Deterministična barva glede na prvo črko imena – ista črka = ista barva. */
+export function colorForLetter(letter: string): string {
+  const code = letter.trim().toUpperCase().charCodeAt(0);
+  if (!code || Number.isNaN(code)) return avatarPalette[0];
+  return avatarPalette[code % avatarPalette.length];
+}
