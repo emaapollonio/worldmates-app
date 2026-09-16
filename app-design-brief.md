@@ -1,4 +1,4 @@
-# WorldMates (delovno ime) – Design Brief
+# MetMap – Design Brief
 
 ## 1. Namen aplikacije
 Enostavna, vizualna aplikacija za popotnike in vse, ki radi širijo poznanstva po svetu.

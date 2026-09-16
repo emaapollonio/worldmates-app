@@ -1,4 +1,4 @@
--- WorldMate – lastniško omejen dostop do `people` (po uvedbi Auth).
+-- MetMap – lastniško omejen dostop do `people` (po uvedbi Auth).
 --
 -- !! VRSTNI RED JE POMEMBEN !!
 -- 1) Najprej preveri v aplikaciji, da prijava / registracija / odjava delujejo.

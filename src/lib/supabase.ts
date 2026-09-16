@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 
 /**
- * Supabase klient za WorldMate.
+ * Supabase klient za MetMap.
  * URL in anon ključ prideta iz .env (EXPO_PUBLIC_* → Expo ju vgradi ob buildu).
  * Seja (prijava) se shrani v AsyncStorage, da uporabnika ob ponovnem
  * zagonu ni treba znova prijavljati.

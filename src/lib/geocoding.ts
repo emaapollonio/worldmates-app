@@ -6,7 +6,7 @@
  * (uporabniške politike ne dovoljujejo anonimnih/generičnih klicev).
  */
 const NOMINATIM_SEARCH_URL = 'https://nominatim.openstreetmap.org/search';
-const USER_AGENT = 'WorldMates-App/1.0 (studentska diplomska aplikacija)';
+const USER_AGENT = 'MetMap-App/1.0 (studentska diplomska aplikacija)';
 
 export type GeocodeResult = { latitude: number; longitude: number };
 

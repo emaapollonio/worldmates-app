@@ -1,5 +1,5 @@
 /**
- * WorldMates barvna paleta.
+ * MetMap barvna paleta.
  * Topli, potovalni, "zemeljski" toni po vizualnem dizajnu (Stitch screenshoti).
  * Zaenkrat samo barve – tipografija in razmiki pridejo kasneje.
  */

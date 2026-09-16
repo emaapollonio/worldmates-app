@@ -1,4 +1,4 @@
--- WorldMate – tabela `people` (po podatkovnem modelu iz briefa).
+-- MetMap – tabela `people` (po podatkovnem modelu iz briefa).
 --
 -- Zaženi na enega od načinov:
 --   a) Supabase Dashboard → SQL Editor → prilepi in poženi

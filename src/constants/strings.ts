@@ -58,7 +58,7 @@ export const STRINGS = {
   },
 
   auth: {
-    appName: 'WorldMates',
+    appName: 'MetMap',
     subtitle: 'Prijavi se ali ustvari nov račun',
     emailLabel: 'E-pošta',
     emailPlaceholder: 'ime@primer.com',

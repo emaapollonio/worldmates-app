@@ -1,4 +1,4 @@
--- WorldMate – galerija slik osebe: stolpec photo_urls + Storage bucket.
+-- MetMap – galerija slik osebe: stolpec photo_urls + Storage bucket.
 --
 -- Zaženi v Supabase Dashboard → SQL Editor (ali `supabase db push`).
 -- `photo_url` (posamezna slika) OSTANE za nazaj združljivost – nove/dodatne

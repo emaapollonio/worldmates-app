@@ -1,4 +1,4 @@
--- WorldMate – koordinate kraja srečanja (za preklop "Kje smo se spoznali" na zemljevidu).
+-- MetMap – koordinate kraja srečanja (za preklop "Kje smo se spoznali" na zemljevidu).
 --
 -- Zaženi v Supabase Dashboard → SQL Editor (ali `supabase db push`).
 
