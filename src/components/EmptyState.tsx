@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../theme/colors';
+import type { AppColors } from '../theme/colors';
+import { useTheme } from '../theme/ThemeContext';
 
 type Props = {
   title: string;
@@ -16,6 +17,9 @@ type Props = {
  * ko ni podatkov za prikaz (npr. brez shranjenih oseb).
  */
 export default function EmptyState({ title, subtitle, icon, buttonLabel, onButtonPress }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <View style={styles.container}>
       <View style={styles.iconWrap}>
@@ -35,7 +39,7 @@ export default function EmptyState({ title, subtitle, icon, buttonLabel, onButto
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
     alignItems: 'center',

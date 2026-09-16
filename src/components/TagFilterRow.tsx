@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ScrollView, Pressable, Text, StyleSheet, type ViewStyle, type StyleProp } from 'react-native';
-import { colors } from '../theme/colors';
+import type { AppColors } from '../theme/colors';
+import { useTheme } from '../theme/ThemeContext';
 
 type Props = {
   tags: string[];
@@ -15,6 +16,9 @@ type Props = {
  * (glej matchesTags v src/lib/people.ts). Če ni nobenih tagov v bazi, se ne izriše nič.
  */
 export default function TagFilterRow({ tags, selected, onToggle, containerStyle }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   if (tags.length === 0) return null;
 
   return (
@@ -39,17 +43,18 @@ export default function TagFilterRow({ tags, selected, onToggle, containerStyle 
   );
 }
 
-const styles = StyleSheet.create({
-  row: { gap: 8 },
-  chip: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 999,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  chipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
-  chipText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary },
-  chipTextActive: { color: colors.onPrimary },
-});
+const createStyles = (colors: AppColors) =>
+  StyleSheet.create({
+    row: { gap: 8 },
+    chip: {
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      borderRadius: 999,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    chipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+    chipText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary },
+    chipTextActive: { color: colors.onPrimary },
+  });

@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -24,7 +24,8 @@ import * as Sharing from 'expo-sharing';
 import type { RootStackParamList } from '../navigation/types';
 import type { ContactType } from '../types/person';
 import { getPerson, deletePerson, type PeopleRow } from '../lib/people';
-import { colors } from '../theme/colors';
+import type { AppColors } from '../theme/colors';
+import { useTheme } from '../theme/ThemeContext';
 import { STRINGS } from '../constants/strings';
 import LoadingState from '../components/LoadingState';
 import ShareCard from '../components/ShareCard';
@@ -69,6 +70,8 @@ function formatDate(iso: string): string {
 export default function PersonProfileScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, 'PersonProfile'>>();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const personId = route.params?.personId;
 
   const [person, setPerson] = useState<PeopleRow | null>(null);
@@ -367,7 +370,7 @@ export default function PersonProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
   content: { padding: 20, paddingBottom: 40 },
   centered: {

@@ -7,7 +7,8 @@ import { Ionicons } from '@expo/vector-icons';
 
 import type { RootStackParamList } from '../navigation/types';
 import { listPeople, matchesLocation, type PeopleRow } from '../lib/people';
-import { colors } from '../theme/colors';
+import type { AppColors } from '../theme/colors';
+import { useTheme } from '../theme/ThemeContext';
 import { STRINGS } from '../constants/strings';
 import SearchBar from '../components/SearchBar';
 
@@ -22,6 +23,8 @@ function personWord(n: number): string {
 
 export default function TripsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const [people, setPeople] = useState<PeopleRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -129,7 +132,7 @@ export default function TripsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
   topBar: { paddingHorizontal: 16, paddingTop: 12, gap: 10 },
   title: { fontSize: 22, fontWeight: '700', color: colors.textPrimary },

@@ -8,7 +8,8 @@ import { Ionicons } from '@expo/vector-icons';
 import type { RootStackParamList } from '../navigation/types';
 import { listPeople, matchesQuery, matchesTags, collectUniqueTags, type PeopleRow } from '../lib/people';
 import { getCachedPeople, setCachedPeople } from '../lib/offlineCache';
-import { colors } from '../theme/colors';
+import type { AppColors } from '../theme/colors';
+import { useTheme } from '../theme/ThemeContext';
 import { STRINGS } from '../constants/strings';
 import SearchBar from '../components/SearchBar';
 import TagFilterRow from '../components/TagFilterRow';
@@ -25,6 +26,8 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
 
 /** Ena siva "okostna" vrstica – prikazana med prvim nalaganjem namesto spinnerja. */
 function SkeletonRow() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   return (
     <View style={styles.row}>
       <View style={[styles.avatar, styles.skeletonBlock]} />
@@ -62,6 +65,8 @@ function sortPeople(people: PeopleRow[], key: SortKey): PeopleRow[] {
 
 export default function ListScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const [people, setPeople] = useState<PeopleRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -247,7 +252,7 @@ export default function ListScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
   topBar: { paddingHorizontal: 16, paddingTop: 12 },
   offlineBannerWrap: { paddingHorizontal: 16, paddingTop: 10, alignItems: 'center' },

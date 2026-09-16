@@ -10,7 +10,8 @@ import * as Haptics from 'expo-haptics';
 import type { RootStackParamList } from '../navigation/types';
 import { listPeople, matchesQuery, matchesTags, collectUniqueTags, type PeopleRow } from '../lib/people';
 import { getCachedPeople, setCachedPeople } from '../lib/offlineCache';
-import { colors, colorForLetter } from '../theme/colors';
+import { colorForLetter, type AppColors } from '../theme/colors';
+import { useTheme } from '../theme/ThemeContext';
 import { STRINGS } from '../constants/strings';
 import SearchBar from '../components/SearchBar';
 import TagFilterRow from '../components/TagFilterRow';
@@ -46,6 +47,8 @@ function PersonMarker({
   coordinate: Coordinate;
   onPress: () => void;
 }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const photoUrl = person.photo_urls?.[0] ?? person.photo_url ?? null;
   const [tracksViewChanges, setTracksViewChanges] = useState(!!photoUrl);
 
@@ -77,6 +80,8 @@ function PersonMarker({
 
 export default function MapScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const mapRef = useRef<MapView>(null);
 
   const [people, setPeople] = useState<PeopleRow[]>([]);
@@ -336,7 +341,7 @@ export default function MapScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
 
   topOverlay: {

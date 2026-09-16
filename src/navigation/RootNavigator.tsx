@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { Session } from '@supabase/supabase-js';
 
 import type { RootStackParamList } from './types';
-import { colors } from '../theme/colors';
+import type { AppColors } from '../theme/colors';
+import { useTheme } from '../theme/ThemeContext';
 import { supabase } from '../lib/supabase';
 import { STRINGS } from '../constants/strings';
 import TabNavigator from './TabNavigator';
@@ -15,6 +16,8 @@ import PersonProfileScreen from '../screens/PersonProfileScreen';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function RootNavigator() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [session, setSession] = useState<Session | null>(null);
   const [initializing, setInitializing] = useState(true);
 
@@ -75,6 +78,7 @@ export default function RootNavigator() {
   );
 }
 
-const styles = StyleSheet.create({
-  loading: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background },
-});
+const createStyles = (colors: AppColors) =>
+  StyleSheet.create({
+    loading: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background },
+  });

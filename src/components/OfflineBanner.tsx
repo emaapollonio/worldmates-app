@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../theme/colors';
+import type { AppColors } from '../theme/colors';
+import { useTheme } from '../theme/ThemeContext';
 import { STRINGS } from '../constants/strings';
 
 /**
@@ -10,6 +11,9 @@ import { STRINGS } from '../constants/strings';
  * zadnjih znanih podatkov namesto napake.
  */
 export default function OfflineBanner() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <View style={styles.banner}>
       <Ionicons name="cloud-offline-outline" size={14} color={colors.textSecondary} />
@@ -18,16 +22,17 @@ export default function OfflineBanner() {
   );
 }
 
-const styles = StyleSheet.create({
-  banner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: 999,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-  },
-  text: { fontSize: 11, color: colors.textSecondary, fontWeight: '600' },
-});
+const createStyles = (colors: AppColors) =>
+  StyleSheet.create({
+    banner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      backgroundColor: colors.surfaceMuted,
+      borderRadius: 999,
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+    },
+    text: { fontSize: 11, color: colors.textSecondary, fontWeight: '600' },
+  });

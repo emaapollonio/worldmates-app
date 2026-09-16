@@ -27,7 +27,8 @@ import { insertPerson, updatePerson, getPerson, type EditablePersonFields } from
 import { uploadPersonPhotos } from '../lib/storage';
 import { geocodeLocation } from '../lib/geocoding';
 import { isNetworkError } from '../lib/network';
-import { colors } from '../theme/colors';
+import type { AppColors } from '../theme/colors';
+import { useTheme } from '../theme/ThemeContext';
 import { STRINGS } from '../constants/strings';
 
 /** Loči že naložene (remote) fotografije od na novo izbranih lokalnih (file://…). */
@@ -77,6 +78,8 @@ function describeError(e: unknown): string {
 export default function AddPersonScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, 'AddPerson'>>();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const personId = route.params?.personId;
   const isEditing = !!personId;
 
@@ -606,7 +609,7 @@ export default function AddPersonScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   flex: { flex: 1 },
   screen: { flex: 1, backgroundColor: colors.background },
   content: { padding: 20, paddingBottom: 48, gap: 8 },

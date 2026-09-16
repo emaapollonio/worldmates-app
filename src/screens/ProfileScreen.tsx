@@ -5,10 +5,13 @@ import { useFocusEffect } from '@react-navigation/native';
 import ScreenPlaceholder, { PlaceholderButton } from '../components/ScreenPlaceholder';
 import { supabase } from '../lib/supabase';
 import { listPeople, computeStats, type PeopleRow } from '../lib/people';
-import { colors } from '../theme/colors';
+import type { AppColors } from '../theme/colors';
+import { useTheme } from '../theme/ThemeContext';
 import { STRINGS } from '../constants/strings';
 
 function StatCard({ value, label }: { value: number; label: string }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   return (
     <View style={styles.statCard}>
       <Text style={styles.statValue}>{value}</Text>
@@ -18,6 +21,8 @@ function StatCard({ value, label }: { value: number; label: string }) {
 }
 
 export default function ProfileScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [people, setPeople] = useState<PeopleRow[]>([]);
   const [loadingStats, setLoadingStats] = useState(true);
 
@@ -82,7 +87,7 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   statsSection: { alignSelf: 'stretch', marginBottom: 4 },
   statsTitle: {
     fontSize: 12,

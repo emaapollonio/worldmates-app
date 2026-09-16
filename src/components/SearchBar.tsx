@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, TextInput, Pressable, StyleSheet, type ViewStyle, type StyleProp } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../theme/colors';
+import type { AppColors } from '../theme/colors';
+import { useTheme } from '../theme/ThemeContext';
 import { STRINGS } from '../constants/strings';
 
 type Props = {
@@ -23,6 +24,9 @@ export default function SearchBar({
   placeholder = STRINGS.searchBar.placeholder,
   containerStyle,
 }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <View style={[styles.container, containerStyle]}>
       <Ionicons name="search" size={18} color={colors.textMuted} />
@@ -45,22 +49,23 @@ export default function SearchBar({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  input: {
-    flex: 1,
-    fontSize: 15,
-    color: colors.textPrimary,
-    padding: 0,
-  },
-});
+const createStyles = (colors: AppColors) =>
+  StyleSheet.create({
+    container: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      backgroundColor: colors.surface,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+    },
+    input: {
+      flex: 1,
+      fontSize: 15,
+      color: colors.textPrimary,
+      padding: 0,
+    },
+  });

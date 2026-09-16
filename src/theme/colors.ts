@@ -1,9 +1,27 @@
 /**
- * MetMap barvna paleta.
- * Topli, potovalni, "zemeljski" toni po vizualnem dizajnu (Stitch screenshoti).
- * Zaenkrat samo barve – tipografija in razmiki pridejo kasneje.
+ * MetMap barvna paleta – svetla in temna varianta.
+ * Topli, potovalni, "zemeljski" toni po vizualnem dizajnu (Stitch screenshoti);
+ * temna varianta obdrži iste tople odtenke, le ozadje je temnejše in besedilo svetlejše.
+ * Glej src/theme/ThemeContext.tsx za preklop glede na sistemsko nastavitev.
  */
-export const colors = {
+export interface AppColors {
+  background: string;
+  surface: string;
+  surfaceMuted: string;
+  primary: string;
+  primaryDark: string;
+  onPrimary: string;
+  accent: string;
+  accentDark: string;
+  textPrimary: string;
+  textSecondary: string;
+  textMuted: string;
+  border: string;
+  tagBlue: string;
+  danger: string;
+}
+
+export const lightColors: AppColors = {
   // Podlaga
   background: '#F7F1E7', // kremna podlaga zaslonov
   surface: '#FFFFFF', // kartice
@@ -27,11 +45,38 @@ export const colors = {
   border: '#E7DCCB',
   tagBlue: '#7FA9C9', // značke tipa "Erasmus"
   danger: '#B23B3B',
-} as const;
+};
 
-export type AppColors = typeof colors;
+export const darkColors: AppColors = {
+  // Podlaga – topla temno rjava, ne čisto črna
+  background: '#1E1712',
+  surface: '#2A2019',
+  surfaceMuted: '#372A20',
 
-/** Nabor barv za avatarje brez fotografije (npr. pini na zemljevidu). */
+  // Primarna – nekoliko svetlejša/živahnejša terakota za kontrast na temnem ozadju
+  primary: '#E07A4E',
+  primaryDark: '#C0562B',
+  onPrimary: '#241B14',
+
+  // Akcent – svetlejša oljčna
+  accent: '#93B57F',
+  accentDark: '#6F8E5E',
+
+  // Besedilo – toplo belo/bež namesto čiste bele
+  textPrimary: '#F4EADD',
+  textSecondary: '#CDB89E',
+  textMuted: '#8C7A66',
+
+  // Ostalo
+  border: '#4A3B2E',
+  tagBlue: '#8FBEDD',
+  danger: '#E58080',
+};
+
+/** Privzeta (svetla) paleta – za nazaj združljivost tam, kjer tema namenoma ni dinamična (npr. ShareCard). */
+export const colors = lightColors;
+
+/** Nabor barv za avatarje brez fotografije (npr. pini na zemljevidu) – enak v obeh temah. */
 export const avatarPalette = [
   '#C0562B', // terakota
   '#5B7551', // oljčna

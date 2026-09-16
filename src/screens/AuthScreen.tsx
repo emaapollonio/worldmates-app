@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -14,7 +14,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 
 import { supabase } from '../lib/supabase';
-import { colors } from '../theme/colors';
+import type { AppColors } from '../theme/colors';
+import { useTheme } from '../theme/ThemeContext';
 import { STRINGS } from '../constants/strings';
 
 /**
@@ -22,6 +23,8 @@ import { STRINGS } from '../constants/strings';
  * posluša supabase.auth.onAuthStateChange in sam preklopi na glavno navigacijo.
  */
 export default function AuthScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -125,7 +128,7 @@ export default function AuthScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors) => StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.background },
   content: { flexGrow: 1, justifyContent: 'center', padding: 24, gap: 12 },
 
