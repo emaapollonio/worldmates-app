@@ -8,12 +8,14 @@ import { Ionicons } from '@expo/vector-icons';
 
 import type { RootStackParamList } from '../navigation/types';
 import { listPeople, matchesQuery, matchesTags, collectUniqueTags, type PeopleRow } from '../lib/people';
+import { getCachedPeople, setCachedPeople } from '../lib/offlineCache';
 import { colors, colorForLetter } from '../theme/colors';
 import { STRINGS } from '../constants/strings';
 import SearchBar from '../components/SearchBar';
 import TagFilterRow from '../components/TagFilterRow';
 import EmptyState from '../components/EmptyState';
 import LoadingState from '../components/LoadingState';
+import OfflineBanner from '../components/OfflineBanner';
 
 /** Ob prvem odprtju je zemljevid oddaljen na cel svet – uporabnik nato sam zoom-a. */
 const INITIAL_REGION: Region = {
@@ -85,37 +87,57 @@ export default function MapScreen() {
   const [latitudeDelta, setLatitudeDelta] = useState(INITIAL_REGION.latitudeDelta);
   const [refreshing, setRefreshing] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('lives');
+  const [isOffline, setIsOffline] = useState(false);
 
-  const loadPeople = useCallback(async (signal?: { cancelled: boolean }) => {
-    setLoading(true);
-    setError(null);
+  /**
+   * Poskusi naložiti sveže podatke iz Supabase. Ob uspehu posodobi prikaz +
+   * cache in izklopi "offline" oznako. Ob neuspehu: če imamo kaj za prikazati
+   * (cache ali že prikazano stanje), to obdržimo in samo prikažemo oznako
+   * "Offline"; sicer (nič za prikazati) je to prava napaka nalaganja.
+   */
+  const fetchFresh = useCallback(async (hasFallback: boolean, signal?: { cancelled: boolean }) => {
     try {
       const rows = await listPeople();
-      if (!signal?.cancelled) setPeople(rows);
+      if (signal?.cancelled) return;
+      setPeople(rows);
+      setError(null);
+      setIsOffline(false);
+      await setCachedPeople(rows);
     } catch (e) {
-      if (!signal?.cancelled) {
-        console.error('[MapScreen] nalaganje oseb ni uspelo:', e);
-        setError(e instanceof Error ? e.message : 'Oseb ni bilo mogoče naložiti.');
+      if (signal?.cancelled) return;
+      console.error('[MapScreen] nalaganje oseb ni uspelo:', e);
+      if (hasFallback) {
+        setIsOffline(true);
+      } else {
+        setError(e instanceof Error ? e.message : STRINGS.common.loadPeopleErrorGeneric);
       }
-    } finally {
-      if (!signal?.cancelled) setLoading(false);
     }
   }, []);
+
+  const loadPeople = useCallback(
+    async (signal?: { cancelled: boolean }) => {
+      setError(null);
+      // Najprej takoj prikaži cache (če obstaja), šele nato poskusi osvežiti.
+      const cached = await getCachedPeople();
+      if (signal?.cancelled) return;
+      if (cached) {
+        setPeople(cached);
+        setLoading(false);
+      } else {
+        setLoading(true);
+      }
+      await fetchFresh(cached !== null, signal);
+      if (!signal?.cancelled) setLoading(false);
+    },
+    [fetchFresh],
+  );
 
   // MapView nima vgrajenega pull-to-refresh, zato ročen gumb zgoraj desno.
   const onRefresh = async () => {
     if (refreshing) return;
     setRefreshing(true);
-    try {
-      const rows = await listPeople();
-      setPeople(rows);
-      setError(null);
-    } catch (e) {
-      console.error('[MapScreen] osvežitev ni uspela:', e);
-      setError(e instanceof Error ? e.message : 'Oseb ni bilo mogoče naložiti.');
-    } finally {
-      setRefreshing(false);
-    }
+    await fetchFresh(people.length > 0);
+    setRefreshing(false);
   };
 
   // Naloži osebe vsakič, ko zaslon postane aktiven (tudi po dodajanju nove osebe).
@@ -215,6 +237,8 @@ export default function MapScreen() {
       </MapView>
 
       <SafeAreaView edges={['top']} style={styles.topOverlay}>
+        {isOffline ? <OfflineBanner /> : null}
+
         <View style={styles.searchRow}>
           <View style={styles.flex}>
             <SearchBar value={query} onChangeText={setQuery} />

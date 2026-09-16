@@ -24,6 +24,7 @@ import type { RootStackParamList } from '../navigation/types';
 import { insertPerson, updatePerson, getPerson, type EditablePersonFields } from '../lib/people';
 import { uploadPersonPhotos } from '../lib/storage';
 import { geocodeLocation } from '../lib/geocoding';
+import { isNetworkError } from '../lib/network';
 import { colors } from '../theme/colors';
 import { STRINGS } from '../constants/strings';
 
@@ -346,7 +347,12 @@ export default function AddPersonScreen() {
       navigation.goBack();
     } catch (e) {
       console.error('[AddPerson] napaka pri shranjevanju v Supabase:', e);
-      Alert.alert(STRINGS.addPerson.saveErrorTitle, describeError(e));
+      // Brez interneta (offline pisanje ni podprto) prikaži jasno, namensko sporočilo
+      // namesto surove napake omrežja.
+      Alert.alert(
+        STRINGS.addPerson.saveErrorTitle,
+        isNetworkError(e) ? STRINGS.addPerson.offlineSaveMessage : describeError(e),
+      );
     } finally {
       setSaving(false);
       setSavePhase('idle');

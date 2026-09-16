@@ -18,6 +18,8 @@ export const STRINGS = {
     loading: 'Nalaganje …',
     genericRetryMessage: 'Poskusi znova.',
     unknownError: 'Neznana napaka',
+    offlineBanner: 'Offline – prikazani zadnji znani podatki',
+    loadPeopleErrorGeneric: 'Oseb ni bilo mogoče naložiti.',
   },
 
   /** Skupno za AddPersonScreen in PersonProfileScreen (izbira/prikaz tipa kontakta). */
@@ -119,6 +121,7 @@ export const STRINGS = {
     locationNotFoundMessage: (city: string, country: string) =>
       `Za "${city}, ${country}" nismo našli koordinat. Preveri zapis kraja/države in poskusi znova.`,
     saveErrorTitle: 'Napaka pri shranjevanju',
+    offlineSaveMessage: 'Za dodajanje osebe potrebuješ internetno povezavo.',
     savingLocation: 'Iščem lokacijo …',
     savingPhotos: 'Nalagam fotografije …',
     saving: 'Shranjujem …',

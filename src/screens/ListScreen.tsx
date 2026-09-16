@@ -7,11 +7,13 @@ import { Ionicons } from '@expo/vector-icons';
 
 import type { RootStackParamList } from '../navigation/types';
 import { listPeople, matchesQuery, matchesTags, collectUniqueTags, type PeopleRow } from '../lib/people';
+import { getCachedPeople, setCachedPeople } from '../lib/offlineCache';
 import { colors } from '../theme/colors';
 import { STRINGS } from '../constants/strings';
 import SearchBar from '../components/SearchBar';
 import TagFilterRow from '../components/TagFilterRow';
 import EmptyState from '../components/EmptyState';
+import OfflineBanner from '../components/OfflineBanner';
 
 type SortKey = 'alpha' | 'metDate' | 'country';
 
@@ -68,37 +70,57 @@ export default function ListScreen() {
   const [sortKey, setSortKey] = useState<SortKey>('alpha');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
 
-  const load = useCallback(async (signal?: { cancelled: boolean }) => {
-    setLoading(true);
-    setError(null);
+  /**
+   * Poskusi naložiti sveže podatke iz Supabase. Ob uspehu posodobi prikaz +
+   * cache in izklopi "offline" oznako. Ob neuspehu: če imamo kaj za prikazati
+   * (cache ali že prikazano stanje), to obdržimo in samo prikažemo oznako
+   * "Offline"; sicer (nič za prikazati) je to prava napaka nalaganja.
+   */
+  const fetchFresh = useCallback(async (hasFallback: boolean, signal?: { cancelled: boolean }) => {
     try {
       const rows = await listPeople();
-      if (!signal?.cancelled) setPeople(rows);
+      if (signal?.cancelled) return;
+      setPeople(rows);
+      setError(null);
+      setIsOffline(false);
+      await setCachedPeople(rows);
     } catch (e) {
-      if (!signal?.cancelled) {
-        console.error('[ListScreen] nalaganje ni uspelo:', e);
-        setError(e instanceof Error ? e.message : 'Oseb ni bilo mogoče naložiti.');
+      if (signal?.cancelled) return;
+      console.error('[ListScreen] nalaganje ni uspelo:', e);
+      if (hasFallback) {
+        setIsOffline(true);
+      } else {
+        setError(e instanceof Error ? e.message : STRINGS.common.loadPeopleErrorGeneric);
       }
-    } finally {
-      if (!signal?.cancelled) setLoading(false);
     }
   }, []);
+
+  const load = useCallback(
+    async (signal?: { cancelled: boolean }) => {
+      setError(null);
+      // Najprej takoj prikaži cache (če obstaja), šele nato poskusi osvežiti.
+      const cached = await getCachedPeople();
+      if (signal?.cancelled) return;
+      if (cached) {
+        setPeople(cached);
+        setLoading(false);
+      } else {
+        setLoading(true);
+      }
+      await fetchFresh(cached !== null, signal);
+      if (!signal?.cancelled) setLoading(false);
+    },
+    [fetchFresh],
+  );
 
   /** Pull-to-refresh: ne uporabi `loading` (da skeleton ne prepiše vidnega seznama). */
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    try {
-      const rows = await listPeople();
-      setPeople(rows);
-      setError(null);
-    } catch (e) {
-      console.error('[ListScreen] osvežitev ni uspela:', e);
-      setError(e instanceof Error ? e.message : 'Oseb ni bilo mogoče naložiti.');
-    } finally {
-      setRefreshing(false);
-    }
-  }, []);
+    await fetchFresh(people.length > 0);
+    setRefreshing(false);
+  }, [fetchFresh, people.length]);
 
   // Naloži ob vsakem fokusu (nova/urejena/izbrisana oseba se takoj pozna).
   useFocusEffect(
@@ -124,6 +146,12 @@ export default function ListScreen() {
 
   return (
     <SafeAreaView edges={['top']} style={styles.screen}>
+      {isOffline ? (
+        <View style={styles.offlineBannerWrap}>
+          <OfflineBanner />
+        </View>
+      ) : null}
+
       <View style={styles.topBar}>
         <SearchBar value={query} onChangeText={setQuery} />
       </View>
@@ -222,6 +250,7 @@ export default function ListScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
   topBar: { paddingHorizontal: 16, paddingTop: 12 },
+  offlineBannerWrap: { paddingHorizontal: 16, paddingTop: 10, alignItems: 'center' },
   tagFilterBar: { paddingLeft: 16, paddingTop: 10 },
 
   sortRow: {
