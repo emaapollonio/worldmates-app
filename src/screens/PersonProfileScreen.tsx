@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
+  Share,
   StyleSheet,
 } from 'react-native';
 import { useFocusEffect, useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
@@ -16,6 +17,8 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import ImageViewing from 'react-native-image-viewing';
 import Toast from 'react-native-toast-message';
+import { captureRef } from 'react-native-view-shot';
+import * as Sharing from 'expo-sharing';
 
 import type { RootStackParamList } from '../navigation/types';
 import type { ContactType } from '../types/person';
@@ -23,6 +26,7 @@ import { getPerson, deletePerson, type PeopleRow } from '../lib/people';
 import { colors } from '../theme/colors';
 import { STRINGS } from '../constants/strings';
 import LoadingState from '../components/LoadingState';
+import ShareCard from '../components/ShareCard';
 
 const CONTACT_LABEL: Record<ContactType, string> = STRINGS.contactLabels;
 
@@ -70,7 +74,9 @@ export default function PersonProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
+  const shareCardRef = useRef<View>(null);
 
   // Naloži ob vsakem fokusu – tako se po urejanju (AddPerson -> goBack) takoj vidijo sveže vrednosti.
   useFocusEffect(
@@ -125,6 +131,27 @@ export default function PersonProfileScreen() {
   const onEdit = () => {
     if (!person) return;
     navigation.navigate('AddPerson', { personId: person.id });
+  };
+
+  /** Zajame ShareCard (izven vidnega polja) kot sliko in jo deli prek sistemskega Share API-ja. */
+  const onShare = async () => {
+    if (!person || sharing) return;
+    setSharing(true);
+    try {
+      const uri = await captureRef(shareCardRef, { format: 'png', quality: 1 });
+      const message = STRINGS.personProfile.shareMessage(person.first_name, person.city);
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, { dialogTitle: message, mimeType: 'image/png', UTI: 'public.png' });
+      } else {
+        // Rezerva, ce sistemski share sheet ni na voljo (redko) - deli vsaj besedilo.
+        await Share.share({ message });
+      }
+    } catch (e) {
+      console.error('[PersonProfile] deljenje ni uspelo:', e);
+      Alert.alert(STRINGS.common.error, STRINGS.personProfile.shareErrorMessage);
+    } finally {
+      setSharing(false);
+    }
   };
 
   const onDelete = () => {
@@ -292,6 +319,18 @@ export default function PersonProfileScreen() {
           <Text style={styles.outlineBtnText}>{STRINGS.common.edit}</Text>
         </Pressable>
         <Pressable
+          style={({ pressed }) => [styles.outlineBtn, pressed && styles.outlineBtnPressed]}
+          onPress={onShare}
+          disabled={sharing}
+        >
+          {sharing ? (
+            <ActivityIndicator size="small" color={colors.textPrimary} />
+          ) : (
+            <Ionicons name="share-social-outline" size={18} color={colors.textPrimary} />
+          )}
+          <Text style={styles.outlineBtnText}>{STRINGS.personProfile.shareButton}</Text>
+        </Pressable>
+        <Pressable
           style={({ pressed }) => [styles.deleteBtn, pressed && styles.deleteBtnPressed]}
           onPress={onDelete}
           disabled={deleting}
@@ -305,6 +344,16 @@ export default function PersonProfileScreen() {
         </Pressable>
       </View>
       </ScrollView>
+
+      {/* Izven vidnega polja – uporabi se samo za zajem slike ob deljenju (glej onShare). */}
+      <View style={styles.offscreen} pointerEvents="none">
+        <ShareCard
+          ref={shareCardRef}
+          name={fullName}
+          location={`${person.city}, ${person.country}`}
+          photoUrl={photos[0] ?? null}
+        />
+      </View>
 
       <ImageViewing
         images={photos.map((uri) => ({ uri }))}
@@ -328,6 +377,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   errorText: { fontSize: 14, color: colors.textSecondary, textAlign: 'center' },
+  offscreen: { position: 'absolute', top: -9999, left: -9999 },
 
   header: { alignItems: 'center', marginBottom: 20 },
   avatar: { width: 104, height: 104, borderRadius: 52, backgroundColor: colors.surfaceMuted },

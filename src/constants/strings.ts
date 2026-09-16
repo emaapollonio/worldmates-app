@@ -7,8 +7,11 @@
  * razvojni konvenciji (npr. STRINGS.addPerson.saveButtonAdd), vrednosti pa
  * ostanejo točno trenutno prikazano besedilo.
  */
+const APP_NAME = 'MetMap';
+
 export const STRINGS = {
   common: {
+    appName: APP_NAME,
     cancel: 'Prekliči',
     retry: 'Poskusi znova',
     back: 'Nazaj',
@@ -60,7 +63,7 @@ export const STRINGS = {
   },
 
   auth: {
-    appName: 'MetMap',
+    appName: APP_NAME,
     subtitle: 'Prijavi se ali ustvari nov račun',
     emailLabel: 'E-pošta',
     emailPlaceholder: 'ime@primer.com',
@@ -151,6 +154,9 @@ export const STRINGS = {
     deleteConfirmMessage: (name: string) => `Res želiš izbrisati ${name}? Tega ni mogoče razveljaviti.`,
     deleteErrorTitle: 'Napaka pri brisanju',
     deletedToast: 'Oseba izbrisana',
+    shareButton: 'Deli',
+    shareErrorMessage: 'Deljenje ni uspelo. Poskusi znova.',
+    shareMessage: (name: string, city: string) => `Spoznal/-a sem ${name} v ${city} 🌍 – ${APP_NAME}`,
   },
 
   map: {
