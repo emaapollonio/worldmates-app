@@ -25,6 +25,9 @@ export interface Person {
   metDate: string | null;
   /** kraj srečanja, če se razlikuje od kraja bivanja */
   metLocation: string | null;
+  /** koordinati kraja srečanja (geokodirani iz metLocation) – null, dokler ni izpolnjen/geokodiran */
+  metLatitude: number | null;
+  metLongitude: number | null;
   /** npr. "hostel", "sopotnik", "lokalec" */
   tags: string[] | null;
   /** ISO timestamp */

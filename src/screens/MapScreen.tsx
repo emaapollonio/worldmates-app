@@ -29,14 +29,25 @@ const INITIAL_REGION: Region = {
  */
 const DETAILED_ZOOM_THRESHOLD = 20;
 
+type ViewMode = 'lives' | 'met';
+type Coordinate = { latitude: number; longitude: number };
+
 /** Okrogel pin: fotografija osebe (prva iz photo_urls / stari photo_url) ali začetnica imena. */
-function PersonMarker({ person, onPress }: { person: PeopleRow; onPress: () => void }) {
+function PersonMarker({
+  person,
+  coordinate,
+  onPress,
+}: {
+  person: PeopleRow;
+  coordinate: Coordinate;
+  onPress: () => void;
+}) {
   const photoUrl = person.photo_urls?.[0] ?? person.photo_url ?? null;
   const [tracksViewChanges, setTracksViewChanges] = useState(!!photoUrl);
 
   return (
     <Marker
-      coordinate={{ latitude: person.latitude, longitude: person.longitude }}
+      coordinate={coordinate}
       title={`${person.first_name} ${person.last_name}`}
       description={`${person.city}, ${person.country}`}
       onPress={onPress}
@@ -72,6 +83,7 @@ export default function MapScreen() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [latitudeDelta, setLatitudeDelta] = useState(INITIAL_REGION.latitudeDelta);
   const [refreshing, setRefreshing] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('lives');
 
   const loadPeople = useCallback(async (signal?: { cancelled: boolean }) => {
     setLoading(true);
@@ -129,15 +141,32 @@ export default function MapScreen() {
   );
   const hasActiveFilter = query.trim().length > 0 || selectedTags.length > 0;
 
+  const getCoordinate = useCallback(
+    (p: PeopleRow): Coordinate | null => {
+      if (viewMode === 'met') {
+        if (p.met_latitude == null || p.met_longitude == null) return null;
+        return { latitude: p.met_latitude, longitude: p.met_longitude };
+      }
+      return { latitude: p.latitude, longitude: p.longitude };
+    },
+    [viewMode],
+  );
+
+  // Pri pogledu "Kje smo se spoznali" izpustimo osebe brez geokodiranega kraja srečanja.
+  const pinsForView = useMemo(
+    () => visiblePeople.filter((p) => getCoordinate(p) !== null),
+    [visiblePeople, getCoordinate],
+  );
+
   // Ob prvem odprtju ostane zemljevid oddaljen na cel svet (INITIAL_REGION).
   // Samo med aktivnim iskanjem/filtrom se pogled prilagodi na rezultate.
   useEffect(() => {
-    if (!mapReady || !hasActiveFilter || visiblePeople.length === 0) return;
+    if (!mapReady || !hasActiveFilter || pinsForView.length === 0) return;
     mapRef.current?.fitToCoordinates(
-      visiblePeople.map((p) => ({ latitude: p.latitude, longitude: p.longitude })),
+      pinsForView.map((p) => getCoordinate(p) as Coordinate),
       { edgePadding: { top: 90, right: 90, bottom: 90, left: 90 }, animated: true },
     );
-  }, [mapReady, hasActiveFilter, visiblePeople]);
+  }, [mapReady, hasActiveFilter, pinsForView, getCoordinate]);
 
   const onMapReady = () => {
     setMapReady(true);
@@ -160,19 +189,20 @@ export default function MapScreen() {
         onMapReady={onMapReady}
         onRegionChangeComplete={(region) => setLatitudeDelta(region.latitudeDelta)}
       >
-        {visiblePeople.map((p) =>
-          isDetailedZoom ? (
-            <PersonMarker key={p.id} person={p} onPress={() => goToProfile(p.id)} />
+        {pinsForView.map((p) => {
+          const coordinate = getCoordinate(p) as Coordinate;
+          return isDetailedZoom ? (
+            <PersonMarker key={p.id} person={p} coordinate={coordinate} onPress={() => goToProfile(p.id)} />
           ) : (
             <Marker
               key={p.id}
-              coordinate={{ latitude: p.latitude, longitude: p.longitude }}
+              coordinate={coordinate}
               title={`${p.first_name} ${p.last_name}`}
               description={`${p.city}, ${p.country}`}
               onPress={() => goToProfile(p.id)}
             />
-          ),
-        )}
+          );
+        })}
       </MapView>
 
       <SafeAreaView edges={['top']} style={styles.topOverlay}>
@@ -191,6 +221,25 @@ export default function MapScreen() {
             ) : (
               <Ionicons name="refresh" size={20} color={colors.onPrimary} />
             )}
+          </Pressable>
+        </View>
+
+        <View style={styles.viewModeRow}>
+          <Pressable
+            style={[styles.viewModeBtn, viewMode === 'lives' && styles.viewModeBtnActive]}
+            onPress={() => setViewMode('lives')}
+          >
+            <Text style={[styles.viewModeText, viewMode === 'lives' && styles.viewModeTextActive]}>
+              Kje živijo
+            </Text>
+          </Pressable>
+          <Pressable
+            style={[styles.viewModeBtn, viewMode === 'met' && styles.viewModeBtnActive]}
+            onPress={() => setViewMode('met')}
+          >
+            <Text style={[styles.viewModeText, viewMode === 'met' && styles.viewModeTextActive]}>
+              Kje smo se spoznali
+            </Text>
           </Pressable>
         </View>
 
@@ -216,6 +265,13 @@ export default function MapScreen() {
         {!loading && !error && people.length > 0 && hasActiveFilter && visiblePeople.length === 0 ? (
           <View style={styles.pill}>
             <Text style={styles.pillText}>Ni zadetkov za izbrano iskanje/filter.</Text>
+          </View>
+        ) : null}
+
+        {/* Status: pogled "Kje smo se spoznali" brez geokodiranih krajev srečanja */}
+        {!loading && !error && visiblePeople.length > 0 && pinsForView.length === 0 && viewMode === 'met' ? (
+          <View style={styles.pill}>
+            <Text style={styles.pillText}>Nobena oseba (še) nima izpolnjenega kraja srečanja.</Text>
           </View>
         ) : null}
       </SafeAreaView>
@@ -272,6 +328,24 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   refreshBtnPressed: { backgroundColor: colors.primaryDark },
+
+  viewModeRow: {
+    flexDirection: 'row',
+    backgroundColor: colors.surface,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 3,
+  },
+  viewModeBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 999,
+    alignItems: 'center',
+  },
+  viewModeBtnActive: { backgroundColor: colors.primary },
+  viewModeText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary },
+  viewModeTextActive: { color: colors.onPrimary },
 
   pill: {
     flexDirection: 'row',

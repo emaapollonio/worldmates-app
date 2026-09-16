@@ -20,6 +20,9 @@ export type PeopleRow = {
   note: string | null;
   met_date: string | null;
   met_location: string | null;
+  /** koordinati kraja srečanja, geokodirani iz met_location; null, dokler ni na voljo */
+  met_latitude: number | null;
+  met_longitude: number | null;
   tags: string[] | null;
   created_at: string;
 };
@@ -29,10 +32,10 @@ type PeopleInsert = Omit<PeopleRow, 'id' | 'created_at' | 'user_id'>;
 
 /**
  * Polja, ki jih obrazec za urejanje sme spremeniti – brez user_id (lastništvo se ne
- * spreminja) in brez met_date/met_location (obrazec jih ne prikazuje, zato jih update
- * ne sme prepisati na null). Tagi so del obrazca, zato ostanejo vključeni.
+ * spreminja) in brez met_date (obrazec ga ne prikazuje, zato ga update ne sme prepisati
+ * na null). Tagi in met_location/met_latitude/met_longitude so del obrazca.
  */
-export type EditablePersonFields = Omit<PeopleInsert, 'met_date' | 'met_location'>;
+export type EditablePersonFields = Omit<PeopleInsert, 'met_date'>;
 
 function draftToRow(draft: PersonDraft): PeopleInsert {
   return {
@@ -49,6 +52,8 @@ function draftToRow(draft: PersonDraft): PeopleInsert {
     note: draft.note,
     met_date: draft.metDate,
     met_location: draft.metLocation,
+    met_latitude: draft.metLatitude,
+    met_longitude: draft.metLongitude,
     tags: draft.tags,
   };
 }

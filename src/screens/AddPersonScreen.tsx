@@ -85,6 +85,7 @@ export default function AddPersonScreen() {
   const [contactType, setContactType] = useState<ContactType>('whatsapp');
   const [contactValue, setContactValue] = useState('');
   const [note, setNote] = useState('');
+  const [metLocation, setMetLocation] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
   const [saving, setSaving] = useState(false);
@@ -113,6 +114,7 @@ export default function AddPersonScreen() {
         setContactType(row.contact_type);
         setContactValue(row.contact_value ?? '');
         setNote(row.note ?? '');
+        setMetLocation(row.met_location ?? '');
         setTags(row.tags ?? []);
         setPhotoUris(row.photo_urls && row.photo_urls.length > 0 ? row.photo_urls : row.photo_url ? [row.photo_url] : []);
       } catch (e) {
@@ -222,6 +224,7 @@ export default function AddPersonScreen() {
     setContactType('whatsapp');
     setContactValue('');
     setNote('');
+    setMetLocation('');
     setTags([]);
     setTagInput('');
   };
@@ -249,6 +252,17 @@ export default function AddPersonScreen() {
           `Za "${city.trim()}, ${country.trim()}" nismo našli koordinat. Preveri zapis kraja/države in poskusi znova.`,
         );
         return;
+      }
+
+      // Kraj srečanja je neobvezen; ce ga geokodiranje ne najde, samo pustimo
+      // met koordinate prazne (ne blokiramo celotnega shranjevanja zaradi tega).
+      let metCoords: { latitude: number; longitude: number } | null = null;
+      if (metLocation.trim()) {
+        try {
+          metCoords = await geocodeLocation(metLocation.trim(), '');
+        } catch (e) {
+          console.warn('[AddPerson] geokodiranje kraja srečanja ni uspelo:', e);
+        }
       }
 
       // Obstoječe (že naložene) slike pustimo pri miru; naložimo samo nove lokalne,
@@ -294,6 +308,9 @@ export default function AddPersonScreen() {
           contact_type: contactType,
           contact_value: trimmedContactValue,
           note: trimmedNote,
+          met_location: metLocation.trim() || null,
+          met_latitude: metCoords?.latitude ?? null,
+          met_longitude: metCoords?.longitude ?? null,
           tags: tagsField,
         };
         const row = await updatePerson(personId, fields);
@@ -313,7 +330,9 @@ export default function AddPersonScreen() {
           contactValue: trimmedContactValue,
           note: trimmedNote,
           metDate: null,
-          metLocation: null,
+          metLocation: metLocation.trim() || null,
+          metLatitude: metCoords?.latitude ?? null,
+          metLongitude: metCoords?.longitude ?? null,
           tags: tagsField,
         };
         const row = await insertPerson(draft);
@@ -432,6 +451,20 @@ export default function AddPersonScreen() {
         <Text style={styles.hint}>
           Koordinate se ob shranjevanju samodejno poiščejo (OpenStreetMap / Nominatim) glede na
           vpisano državo in kraj.
+        </Text>
+
+        {/* Kraj srečanja (neobvezno) */}
+        <Text style={styles.sectionTitle}>Kje sta se spoznala?</Text>
+        <TextInput
+          style={styles.input}
+          value={metLocation}
+          onChangeText={setMetLocation}
+          placeholder="npr. Hostel Oasis, Lizbona (neobvezno)"
+          placeholderTextColor={colors.textMuted}
+        />
+        <Text style={styles.hint}>
+          Če se razlikuje od kraja bivanja – tudi to se samodejno geokodira, za pogled "Kje smo se
+          spoznali" na zemljevidu.
         </Text>
 
         {/* Kontakt */}
