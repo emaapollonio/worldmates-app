@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, Image, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
-import MapView, { Marker, type Region } from 'react-native-maps';
+import { View, Text, Image, Pressable, ActivityIndicator, Platform, StyleSheet } from 'react-native';
+import MapView, { Marker, PROVIDER_GOOGLE, type Region } from 'react-native-maps';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,8 +19,8 @@ import LoadingState from '../components/LoadingState';
 const INITIAL_REGION: Region = {
   latitude: 20,
   longitude: 0,
-  latitudeDelta: 90,
-  longitudeDelta: 180,
+  latitudeDelta: 100,
+  longitudeDelta: 170,
 };
 
 /**
@@ -169,13 +169,18 @@ export default function MapScreen() {
     );
   }, [mapReady, hasActiveFilter, pinsForView, getCoordinate]);
 
-  const onMapReady = () => {
-    setMapReady(true);
-    // `initialRegion` je namenjen samo prvemu izrisu, a se pri react-native-maps
-    // (zlasti po Fast Refresh / na nekaterih napravah) ne uveljavi zanesljivo –
-    // zato ob pripravljenem zemljevidu svetovni pogled vsilimo tudi eksplicitno.
-    mapRef.current?.animateToRegion(INITIAL_REGION, 0);
-  };
+  const onMapReady = () => setMapReady(true);
+
+  // `initialRegion` je namenjen samo prvemu izrisu, a se pri react-native-maps ne
+  // uveljavi vedno zanesljivo (privzeta kamera zna prepisati svetovni pogled nazaj
+  // na regijsko približan izsek). Zato ga ob mountu z rahlim zamikom (dokler je
+  // native view zares pripravljen sprejeti ukaze) eksplicitno vsilimo še enkrat.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      mapRef.current?.animateToRegion(INITIAL_REGION, 0);
+    }, 150);
+    return () => clearTimeout(timer);
+  }, []);
 
   const goToProfile = (personId: string) => navigation.navigate('PersonProfile', { personId });
 
@@ -185,6 +190,9 @@ export default function MapScreen() {
     <View style={styles.container}>
       <MapView
         ref={mapRef}
+        // PROVIDER_GOOGLE samo na Androidu – v Expo Go za iOS ni na voljo Google Maps SDK
+        // (Expo Go ga za iOS ne vgrajuje), zato bi eksplicitna zahteva tam pomenila prazen zemljevid.
+        provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
         style={StyleSheet.absoluteFill}
         initialRegion={INITIAL_REGION}
         onMapReady={onMapReady}
