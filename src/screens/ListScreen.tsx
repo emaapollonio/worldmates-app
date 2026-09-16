@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { View, Text, Image, FlatList, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Image, FlatList, Pressable, RefreshControl, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -66,6 +66,7 @@ export default function ListScreen() {
   const [query, setQuery] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('alpha');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async (signal?: { cancelled: boolean }) => {
     setLoading(true);
@@ -80,6 +81,21 @@ export default function ListScreen() {
       }
     } finally {
       if (!signal?.cancelled) setLoading(false);
+    }
+  }, []);
+
+  /** Pull-to-refresh: ne uporabi `loading` (da skeleton ne prepiše vidnega seznama). */
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const rows = await listPeople();
+      setPeople(rows);
+      setError(null);
+    } catch (e) {
+      console.error('[ListScreen] osvežitev ni uspela:', e);
+      setError(e instanceof Error ? e.message : 'Oseb ni bilo mogoče naložiti.');
+    } finally {
+      setRefreshing(false);
     }
   }, []);
 
@@ -155,6 +171,9 @@ export default function ListScreen() {
           keyExtractor={(p) => p.id}
           contentContainerStyle={[styles.listContent, visiblePeople.length === 0 && styles.listContentEmpty]}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary]} />
+          }
           ListEmptyComponent={
             people.length === 0 ? (
               <EmptyState

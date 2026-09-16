@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Image, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
 import MapView, { Marker, type Region } from 'react-native-maps';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 
 import type { RootStackParamList } from '../navigation/types';
 import { listPeople, matchesQuery, matchesTags, collectUniqueTags, type PeopleRow } from '../lib/people';
@@ -70,6 +71,7 @@ export default function MapScreen() {
   const [query, setQuery] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [latitudeDelta, setLatitudeDelta] = useState(INITIAL_REGION.latitudeDelta);
+  const [refreshing, setRefreshing] = useState(false);
 
   const loadPeople = useCallback(async (signal?: { cancelled: boolean }) => {
     setLoading(true);
@@ -86,6 +88,22 @@ export default function MapScreen() {
       if (!signal?.cancelled) setLoading(false);
     }
   }, []);
+
+  // MapView nima vgrajenega pull-to-refresh, zato ročen gumb zgoraj desno.
+  const onRefresh = async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    try {
+      const rows = await listPeople();
+      setPeople(rows);
+      setError(null);
+    } catch (e) {
+      console.error('[MapScreen] osvežitev ni uspela:', e);
+      setError(e instanceof Error ? e.message : 'Oseb ni bilo mogoče naložiti.');
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   // Naloži osebe vsakič, ko zaslon postane aktiven (tudi po dodajanju nove osebe).
   useFocusEffect(
@@ -158,7 +176,23 @@ export default function MapScreen() {
       </MapView>
 
       <SafeAreaView edges={['top']} style={styles.topOverlay}>
-        <SearchBar value={query} onChangeText={setQuery} />
+        <View style={styles.searchRow}>
+          <View style={styles.flex}>
+            <SearchBar value={query} onChangeText={setQuery} />
+          </View>
+          <Pressable
+            style={({ pressed }) => [styles.refreshBtn, pressed && styles.refreshBtnPressed]}
+            onPress={onRefresh}
+            disabled={refreshing}
+            accessibilityLabel="Osveži pine"
+          >
+            {refreshing ? (
+              <ActivityIndicator size="small" color={colors.onPrimary} />
+            ) : (
+              <Ionicons name="refresh" size={20} color={colors.onPrimary} />
+            )}
+          </Pressable>
+        </View>
 
         {uniqueTags.length > 0 ? (
           <TagFilterRow tags={uniqueTags} selected={selectedTags} onToggle={toggleTag} />
@@ -221,6 +255,23 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     gap: 10,
   },
+
+  searchRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  flex: { flex: 1 },
+  refreshBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+  },
+  refreshBtnPressed: { backgroundColor: colors.primaryDark },
 
   pill: {
     flexDirection: 'row',
