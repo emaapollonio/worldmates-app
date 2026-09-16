@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import Toast from 'react-native-toast-message';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
@@ -297,6 +298,7 @@ export default function AddPersonScreen() {
         };
         const row = await updatePerson(personId, fields);
         console.log('[AddPerson] posodobljeno v Supabase:\n' + JSON.stringify(row, null, 2));
+        Toast.show({ type: 'success', text1: 'Oseba posodobljena', visibilityTime: 2000 });
       } else {
         const draft: PersonDraft = {
           firstName: firstName.trim(),
@@ -316,6 +318,7 @@ export default function AddPersonScreen() {
         };
         const row = await insertPerson(draft);
         console.log('[AddPerson] shranjeno v Supabase:\n' + JSON.stringify(row, null, 2));
+        Toast.show({ type: 'success', text1: 'Oseba shranjena', visibilityTime: 2000 });
       }
       resetForm();
       // Nazaj na zaslon, od koder je bil obrazec odprt (Zemljevid/Seznam/Profil) –

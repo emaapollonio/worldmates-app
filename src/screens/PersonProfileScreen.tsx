@@ -15,6 +15,7 @@ import { useFocusEffect, useNavigation, useRoute, type RouteProp } from '@react-
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import ImageViewing from 'react-native-image-viewing';
+import Toast from 'react-native-toast-message';
 
 import type { RootStackParamList } from '../navigation/types';
 import type { ContactType } from '../types/person';
@@ -145,6 +146,7 @@ export default function PersonProfileScreen() {
             setDeleting(true);
             try {
               await deletePerson(person.id);
+              Toast.show({ type: 'success', text1: 'Oseba izbrisana', visibilityTime: 2000 });
               navigation.goBack();
             } catch (e) {
               setDeleting(false);

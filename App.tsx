@@ -2,6 +2,7 @@ import React from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
+import Toast from 'react-native-toast-message';
 
 import RootNavigator from './src/navigation/RootNavigator';
 import { colors } from './src/theme/colors';
@@ -31,6 +32,8 @@ export default function App() {
         <StatusBar style="dark" />
         <RootNavigator />
       </NavigationContainer>
+      {/* Na dnu drevesa, da se sporočila izrišejo nad vso vsebino (tudi modale). */}
+      <Toast />
     </SafeAreaProvider>
   );
 }
