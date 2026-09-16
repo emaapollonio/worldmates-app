@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { View, Text, Image, FlatList, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, Image, FlatList, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -19,6 +19,21 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: 'metDate', label: 'Datum srečanja' },
   { key: 'country', label: 'Država' },
 ];
+
+/** Ena siva "okostna" vrstica – prikazana med prvim nalaganjem namesto spinnerja. */
+function SkeletonRow() {
+  return (
+    <View style={styles.row}>
+      <View style={[styles.avatar, styles.skeletonBlock]} />
+      <View style={styles.skeletonLines}>
+        <View style={[styles.skeletonBlock, styles.skeletonLineWide]} />
+        <View style={[styles.skeletonBlock, styles.skeletonLineNarrow]} />
+      </View>
+    </View>
+  );
+}
+
+const SKELETON_ROWS = [0, 1, 2, 3, 4, 5];
 
 function sortPeople(people: PeopleRow[], key: SortKey): PeopleRow[] {
   const sorted = [...people];
@@ -119,8 +134,13 @@ export default function ListScreen() {
       </View>
 
       {loading && people.length === 0 ? (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color={colors.primary} />
+        <View style={styles.listContent}>
+          {SKELETON_ROWS.map((i) => (
+            <React.Fragment key={i}>
+              {i > 0 ? <View style={styles.separator} /> : null}
+              <SkeletonRow />
+            </React.Fragment>
+          ))}
         </View>
       ) : error ? (
         <View style={styles.centered}>
@@ -232,4 +252,9 @@ const styles = StyleSheet.create({
   rowText: { flex: 1 },
   rowName: { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
   rowLocation: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
+
+  skeletonBlock: { backgroundColor: colors.border },
+  skeletonLines: { flex: 1, gap: 8 },
+  skeletonLineWide: { height: 14, width: '55%', borderRadius: 4 },
+  skeletonLineNarrow: { height: 12, width: '35%', borderRadius: 4 },
 });

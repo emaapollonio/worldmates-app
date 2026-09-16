@@ -20,6 +20,7 @@ import type { RootStackParamList } from '../navigation/types';
 import type { ContactType } from '../types/person';
 import { getPerson, deletePerson, type PeopleRow } from '../lib/people';
 import { colors } from '../theme/colors';
+import LoadingState from '../components/LoadingState';
 
 const CONTACT_LABEL: Record<ContactType, string> = {
   phone: 'Telefon',
@@ -157,11 +158,7 @@ export default function PersonProfileScreen() {
   };
 
   if (loading) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
+    return <LoadingState message="Nalaganje …" />;
   }
 
   if (error || !person) {

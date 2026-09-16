@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, Image, ActivityIndicator, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
 import MapView, { Marker, type Region } from 'react-native-maps';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -11,6 +11,7 @@ import { colors, colorForLetter } from '../theme/colors';
 import SearchBar from '../components/SearchBar';
 import TagFilterRow from '../components/TagFilterRow';
 import EmptyState from '../components/EmptyState';
+import LoadingState from '../components/LoadingState';
 
 /** Ob prvem odprtju je zemljevid oddaljen na cel svet – uporabnik nato sam zoom-a. */
 const INITIAL_REGION: Region = {
@@ -163,14 +164,6 @@ export default function MapScreen() {
           <TagFilterRow tags={uniqueTags} selected={selectedTags} onToggle={toggleTag} />
         ) : null}
 
-        {/* Status: nalaganje */}
-        {loading && people.length === 0 ? (
-          <View style={styles.pill}>
-            <ActivityIndicator size="small" color={colors.primary} />
-            <Text style={styles.pillText}>Nalagam osebe …</Text>
-          </View>
-        ) : null}
-
         {/* Status: napaka */}
         {error ? (
           <View style={styles.card}>
@@ -192,6 +185,13 @@ export default function MapScreen() {
           </View>
         ) : null}
       </SafeAreaView>
+
+      {/* Nalaganje: prvi prikaz, dokler ni podatkov */}
+      {loading && people.length === 0 ? (
+        <View style={StyleSheet.absoluteFill}>
+          <LoadingState message="Nalagam osebe …" />
+        </View>
+      ) : null}
 
       {/* Prazen zaslon: sploh ni shranjenih oseb (namesto praznega zemljevida) */}
       {!loading && !error && people.length === 0 ? (
