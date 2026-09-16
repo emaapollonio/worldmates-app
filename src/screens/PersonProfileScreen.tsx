@@ -17,6 +17,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import ImageViewing from 'react-native-image-viewing';
 import Toast from 'react-native-toast-message';
+import * as Haptics from 'expo-haptics';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 
@@ -169,6 +170,7 @@ export default function PersonProfileScreen() {
             try {
               await deletePerson(person.id);
               Toast.show({ type: 'success', text1: STRINGS.personProfile.deletedToast, visibilityTime: 2000 });
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               navigation.goBack();
             } catch (e) {
               setDeleting(false);

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   ScrollView,
   Image,
   Alert,
+  Animated,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
@@ -15,6 +16,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import * as Haptics from 'expo-haptics';
 import Toast from 'react-native-toast-message';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -77,6 +79,16 @@ export default function AddPersonScreen() {
   const route = useRoute<RouteProp<RootStackParamList, 'AddPerson'>>();
   const personId = route.params?.personId;
   const isEditing = !!personId;
+
+  // Rahel fade/slide ob uspešnem shranjevanju, namesto takojšnjega preklopa nazaj.
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const closeWithAnimation = () => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 0, duration: 220, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: 24, duration: 220, useNativeDriver: true }),
+    ]).start(() => navigation.goBack());
+  };
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -340,11 +352,13 @@ export default function AddPersonScreen() {
         const row = await insertPerson(draft);
         console.log('[AddPerson] shranjeno v Supabase:\n' + JSON.stringify(row, null, 2));
         Toast.show({ type: 'success', text1: STRINGS.addPerson.savedToastAdd, visibilityTime: 2000 });
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
       resetForm();
-      // Nazaj na zaslon, od koder je bil obrazec odprt (Zemljevid/Seznam/Profil) –
-      // ta zaslon ob fokusu (useFocusEffect) takoj naloži sveže podatke.
-      navigation.goBack();
+      // Nazaj na zaslon, od koder je bil obrazec odprt (Zemljevid/Seznam/Profil) – z rahlim
+      // fade/slide prehodom namesto takojšnjega preklopa; ta zaslon ob fokusu
+      // (useFocusEffect) takoj naloži sveže podatke.
+      closeWithAnimation();
     } catch (e) {
       console.error('[AddPerson] napaka pri shranjevanju v Supabase:', e);
       // Brez interneta (offline pisanje ni podprto) prikaži jasno, namensko sporočilo
@@ -380,10 +394,11 @@ export default function AddPersonScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    <Animated.View style={[styles.flex, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
       <ScrollView
         style={styles.screen}
         contentContainerStyle={styles.content}
@@ -586,7 +601,8 @@ export default function AddPersonScreen() {
           </Text>
         </Pressable>
       </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </Animated.View>
   );
 }
 

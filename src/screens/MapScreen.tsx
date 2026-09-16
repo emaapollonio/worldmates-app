@@ -5,6 +5,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 
 import type { RootStackParamList } from '../navigation/types';
 import { listPeople, matchesQuery, matchesTags, collectUniqueTags, type PeopleRow } from '../lib/people';
@@ -204,7 +205,10 @@ export default function MapScreen() {
     return () => clearTimeout(timer);
   }, []);
 
-  const goToProfile = (personId: string) => navigation.navigate('PersonProfile', { personId });
+  const goToProfile = (personId: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    navigation.navigate('PersonProfile', { personId });
+  };
 
   const isDetailedZoom = latitudeDelta < DETAILED_ZOOM_THRESHOLD;
 
