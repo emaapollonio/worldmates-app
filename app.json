@@ -7,9 +7,11 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.emaapollonio.metmap"
     },
     "android": {
+      "package": "com.emaapollonio.metmap",
       "adaptiveIcon": {
         "backgroundColor": "#C0562B",
         "foregroundImage": "./assets/adaptive-icon.png"
