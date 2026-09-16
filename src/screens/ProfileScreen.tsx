@@ -6,6 +6,7 @@ import ScreenPlaceholder, { PlaceholderButton } from '../components/ScreenPlaceh
 import { supabase } from '../lib/supabase';
 import { listPeople, computeStats, type PeopleRow } from '../lib/people';
 import { colors } from '../theme/colors';
+import { STRINGS } from '../constants/strings';
 
 function StatCard({ value, label }: { value: number; label: string }) {
   return (
@@ -44,16 +45,16 @@ export default function ProfileScreen() {
   const stats = useMemo(() => computeStats(people), [people]);
 
   const onLogout = () => {
-    Alert.alert('Odjava', 'Se res želiš odjaviti?', [
-      { text: 'Prekliči', style: 'cancel' },
+    Alert.alert(STRINGS.profile.logoutConfirmTitle, STRINGS.profile.logoutConfirmMessage, [
+      { text: STRINGS.common.cancel, style: 'cancel' },
       {
-        text: 'Odjava',
+        text: STRINGS.profile.logoutButton,
         style: 'destructive',
         onPress: async () => {
           const { error } = await supabase.auth.signOut();
           if (error) {
             console.error('[Profile] odjava ni uspela:', error);
-            Alert.alert('Napaka pri odjavi', error.message);
+            Alert.alert(STRINGS.profile.logoutErrorTitle, error.message);
           }
           // Ob uspehu RootNavigator prek onAuthStateChange sam preklopi na AuthScreen.
         },
@@ -62,25 +63,21 @@ export default function ProfileScreen() {
   };
 
   return (
-    <ScreenPlaceholder
-      title="Profil"
-      subtitle="Uporabnikov račun, statistika (št. držav / celin) in nastavitve."
-      icon="person-outline"
-    >
+    <ScreenPlaceholder title={STRINGS.profile.title} subtitle={STRINGS.profile.subtitle} icon="person-outline">
       <View style={styles.statsSection}>
-        <Text style={styles.statsTitle}>Statistika</Text>
+        <Text style={styles.statsTitle}>{STRINGS.profile.statsTitle}</Text>
         {loadingStats ? (
           <ActivityIndicator color={colors.primary} />
         ) : (
           <View style={styles.statsRow}>
-            <StatCard value={stats.totalPeople} label="prijateljev" />
-            <StatCard value={stats.countryCount} label="držav" />
-            <StatCard value={stats.continentCount} label="celin" />
+            <StatCard value={stats.totalPeople} label={STRINGS.profile.statFriends} />
+            <StatCard value={stats.countryCount} label={STRINGS.profile.statCountries} />
+            <StatCard value={stats.continentCount} label={STRINGS.profile.statContinents} />
           </View>
         )}
       </View>
 
-      <PlaceholderButton label="Odjava" variant="outline" onPress={onLogout} />
+      <PlaceholderButton label={STRINGS.profile.logoutButton} variant="outline" onPress={onLogout} />
     </ScreenPlaceholder>
   );
 }

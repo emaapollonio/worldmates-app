@@ -21,15 +21,10 @@ import type { RootStackParamList } from '../navigation/types';
 import type { ContactType } from '../types/person';
 import { getPerson, deletePerson, type PeopleRow } from '../lib/people';
 import { colors } from '../theme/colors';
+import { STRINGS } from '../constants/strings';
 import LoadingState from '../components/LoadingState';
 
-const CONTACT_LABEL: Record<ContactType, string> = {
-  phone: 'Telefon',
-  whatsapp: 'WhatsApp',
-  instagram: 'Instagram',
-  telegram: 'Telegram',
-  email: 'E-pošta',
-};
+const CONTACT_LABEL: Record<ContactType, string> = STRINGS.contactLabels;
 
 const CONTACT_ICON: Record<ContactType, keyof typeof Ionicons.glyphMap> = {
   phone: 'call-outline',
@@ -81,7 +76,7 @@ export default function PersonProfileScreen() {
   useFocusEffect(
     useCallback(() => {
       if (!personId) {
-        setError('Manjka personId v navigacijskih parametrih.');
+        setError(STRINGS.personProfile.missingParamError);
         setLoading(false);
         return;
       }
@@ -92,12 +87,12 @@ export default function PersonProfileScreen() {
         try {
           const row = await getPerson(personId);
           if (cancelled) return;
-          if (!row) setError('Osebe ni bilo mogoče najti.');
+          if (!row) setError(STRINGS.personProfile.notFound);
           else setPerson(row);
         } catch (e) {
           if (!cancelled) {
             console.error('[PersonProfile] nalaganje ni uspelo:', e);
-            setError(e instanceof Error ? e.message : 'Nalaganje ni uspelo.');
+            setError(e instanceof Error ? e.message : STRINGS.personProfile.loadErrorGeneric);
           }
         } finally {
           if (!cancelled) setLoading(false);
@@ -111,19 +106,19 @@ export default function PersonProfileScreen() {
 
   const onWrite = async () => {
     if (!person?.contact_value) {
-      Alert.alert('Ni kontakta', 'Za to osebo ni shranjenega kontakta.');
+      Alert.alert(STRINGS.personProfile.noContactTitle, STRINGS.personProfile.noContactSavedMessage);
       return;
     }
     const url = buildContactUrl(person.contact_type, person.contact_value);
     if (!url) {
-      Alert.alert('Ni kontakta', 'Kontakta ni bilo mogoče pretvoriti v povezavo.');
+      Alert.alert(STRINGS.personProfile.noContactTitle, STRINGS.personProfile.noContactUrlMessage);
       return;
     }
     try {
       await Linking.openURL(url);
     } catch (e) {
       console.error('[PersonProfile] Linking.openURL ni uspel:', e);
-      Alert.alert('Napaka', 'Povezave ni bilo mogoče odpreti.');
+      Alert.alert(STRINGS.personProfile.openLinkErrorTitle, STRINGS.personProfile.openLinkErrorMessage);
     }
   };
 
@@ -135,23 +130,26 @@ export default function PersonProfileScreen() {
   const onDelete = () => {
     if (!person) return;
     Alert.alert(
-      'Izbriši osebo',
-      `Res želiš izbrisati ${person.first_name} ${person.last_name}? Tega ni mogoče razveljaviti.`,
+      STRINGS.personProfile.deleteConfirmTitle,
+      STRINGS.personProfile.deleteConfirmMessage(`${person.first_name} ${person.last_name}`),
       [
-        { text: 'Prekliči', style: 'cancel' },
+        { text: STRINGS.common.cancel, style: 'cancel' },
         {
-          text: 'Izbriši',
+          text: STRINGS.common.delete,
           style: 'destructive',
           onPress: async () => {
             setDeleting(true);
             try {
               await deletePerson(person.id);
-              Toast.show({ type: 'success', text1: 'Oseba izbrisana', visibilityTime: 2000 });
+              Toast.show({ type: 'success', text1: STRINGS.personProfile.deletedToast, visibilityTime: 2000 });
               navigation.goBack();
             } catch (e) {
               setDeleting(false);
               console.error('[PersonProfile] brisanje ni uspelo:', e);
-              Alert.alert('Napaka pri brisanju', e instanceof Error ? e.message : 'Poskusi znova.');
+              Alert.alert(
+                STRINGS.personProfile.deleteErrorTitle,
+                e instanceof Error ? e.message : STRINGS.common.genericRetryMessage,
+              );
             }
           },
         },
@@ -160,16 +158,16 @@ export default function PersonProfileScreen() {
   };
 
   if (loading) {
-    return <LoadingState message="Nalaganje …" />;
+    return <LoadingState message={STRINGS.common.loading} />;
   }
 
   if (error || !person) {
     return (
       <View style={styles.centered}>
         <Ionicons name="alert-circle-outline" size={40} color={colors.textMuted} />
-        <Text style={styles.errorText}>{error ?? 'Osebe ni bilo mogoče naložiti.'}</Text>
+        <Text style={styles.errorText}>{error ?? STRINGS.personProfile.notFound}</Text>
         <Pressable style={styles.outlineBtn} onPress={() => navigation.goBack()}>
-          <Text style={styles.outlineBtnText}>Nazaj</Text>
+          <Text style={styles.outlineBtnText}>{STRINGS.common.back}</Text>
         </Pressable>
       </View>
     );
@@ -219,7 +217,9 @@ export default function PersonProfileScreen() {
       >
         <Ionicons name={CONTACT_ICON[person.contact_type]} size={18} color={colors.onPrimary} />
         <Text style={styles.writeBtnText}>
-          {hasContact ? `Piši prek ${CONTACT_LABEL[person.contact_type]}` : 'Ni shranjenega kontakta'}
+          {hasContact
+            ? `${STRINGS.personProfile.writeButtonPrefix}${CONTACT_LABEL[person.contact_type]}`
+            : STRINGS.personProfile.writeButtonNoContact}
         </Text>
       </Pressable>
       {hasContact ? <Text style={styles.contactValue}>{person.contact_value}</Text> : null}
@@ -238,7 +238,7 @@ export default function PersonProfileScreen() {
       {/* Kako sva se spoznala */}
       {hasMeeting ? (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Kako sva se spoznala</Text>
+          <Text style={styles.sectionTitle}>{STRINGS.personProfile.meetingSectionTitle}</Text>
           {person.met_location ? (
             <View style={styles.metaRow}>
               <Ionicons name="map-outline" size={15} color={colors.textSecondary} />
@@ -257,7 +257,7 @@ export default function PersonProfileScreen() {
       {/* Beležka */}
       {person.note ? (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Opombe</Text>
+          <Text style={styles.sectionTitle}>{STRINGS.personProfile.noteSectionTitle}</Text>
           <Text style={styles.sectionText}>{person.note}</Text>
         </View>
       ) : null}
@@ -265,7 +265,7 @@ export default function PersonProfileScreen() {
       {/* Galerija skupnih slik */}
       {photos.length > 0 ? (
         <View style={styles.gallerySection}>
-          <Text style={styles.sectionTitle}>Galerija slik</Text>
+          <Text style={styles.sectionTitle}>{STRINGS.personProfile.gallerySectionTitle}</Text>
           <FlatList
             data={photos}
             horizontal
@@ -289,7 +289,7 @@ export default function PersonProfileScreen() {
           onPress={onEdit}
         >
           <Ionicons name="create-outline" size={18} color={colors.textPrimary} />
-          <Text style={styles.outlineBtnText}>Uredi</Text>
+          <Text style={styles.outlineBtnText}>{STRINGS.common.edit}</Text>
         </Pressable>
         <Pressable
           style={({ pressed }) => [styles.deleteBtn, pressed && styles.deleteBtnPressed]}
@@ -301,7 +301,7 @@ export default function PersonProfileScreen() {
           ) : (
             <Ionicons name="trash-outline" size={18} color={colors.danger} />
           )}
-          <Text style={styles.deleteBtnText}>Izbriši</Text>
+          <Text style={styles.deleteBtnText}>{STRINGS.common.delete}</Text>
         </Pressable>
       </View>
       </ScrollView>

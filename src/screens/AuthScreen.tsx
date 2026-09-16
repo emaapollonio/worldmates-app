@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { supabase } from '../lib/supabase';
 import { colors } from '../theme/colors';
+import { STRINGS } from '../constants/strings';
 
 /**
  * Prijava / registracija. Ob uspehu ne navigiramo ročno – RootNavigator
@@ -27,7 +28,7 @@ export default function AuthScreen() {
 
   const validate = () => {
     if (!email.trim() || !password) {
-      Alert.alert('Manjkajoči podatki', 'Vpiši e-pošto in geslo.');
+      Alert.alert(STRINGS.auth.missingFieldsTitle, STRINGS.auth.missingFieldsMessage);
       return false;
     }
     return true;
@@ -41,7 +42,7 @@ export default function AuthScreen() {
       if (error) throw error;
     } catch (e) {
       console.error('[Auth] prijava ni uspela:', e);
-      Alert.alert('Prijava ni uspela', e instanceof Error ? e.message : 'Poskusi znova.');
+      Alert.alert(STRINGS.auth.signInFailedTitle, e instanceof Error ? e.message : STRINGS.common.genericRetryMessage);
     } finally {
       setLoading(false);
     }
@@ -54,14 +55,11 @@ export default function AuthScreen() {
       const { error, data } = await supabase.auth.signUp({ email: email.trim(), password });
       if (error) throw error;
       if (!data.session) {
-        Alert.alert(
-          'Preveri e-pošto',
-          'Poslali smo ti potrditveno povezavo. Ko potrdiš e-pošto, se lahko prijaviš.',
-        );
+        Alert.alert(STRINGS.auth.confirmEmailTitle, STRINGS.auth.confirmEmailMessage);
       }
     } catch (e) {
       console.error('[Auth] registracija ni uspela:', e);
-      Alert.alert('Registracija ni uspela', e instanceof Error ? e.message : 'Poskusi znova.');
+      Alert.alert(STRINGS.auth.signUpFailedTitle, e instanceof Error ? e.message : STRINGS.common.genericRetryMessage);
     } finally {
       setLoading(false);
     }
@@ -73,16 +71,16 @@ export default function AuthScreen() {
         <View style={styles.logoWrap}>
           <Ionicons name="earth" size={40} color={colors.primary} />
         </View>
-        <Text style={styles.title}>WorldMates</Text>
-        <Text style={styles.subtitle}>Prijavi se ali ustvari nov račun</Text>
+        <Text style={styles.title}>{STRINGS.auth.appName}</Text>
+        <Text style={styles.subtitle}>{STRINGS.auth.subtitle}</Text>
 
         <View style={styles.field}>
-          <Text style={styles.label}>E-pošta</Text>
+          <Text style={styles.label}>{STRINGS.auth.emailLabel}</Text>
           <TextInput
             style={styles.input}
             value={email}
             onChangeText={setEmail}
-            placeholder="ime@primer.com"
+            placeholder={STRINGS.auth.emailPlaceholder}
             placeholderTextColor={colors.textMuted}
             autoCapitalize="none"
             autoCorrect={false}
@@ -91,12 +89,12 @@ export default function AuthScreen() {
         </View>
 
         <View style={styles.field}>
-          <Text style={styles.label}>Geslo</Text>
+          <Text style={styles.label}>{STRINGS.auth.passwordLabel}</Text>
           <TextInput
             style={styles.input}
             value={password}
             onChangeText={setPassword}
-            placeholder="••••••••"
+            placeholder={STRINGS.auth.passwordPlaceholder}
             placeholderTextColor={colors.textMuted}
             secureTextEntry
             autoCapitalize="none"
@@ -111,7 +109,7 @@ export default function AuthScreen() {
           {loading ? (
             <ActivityIndicator color={colors.onPrimary} />
           ) : (
-            <Text style={styles.primaryBtnText}>Prijava</Text>
+            <Text style={styles.primaryBtnText}>{STRINGS.auth.signInButton}</Text>
           )}
         </Pressable>
 
@@ -120,7 +118,7 @@ export default function AuthScreen() {
           onPress={onSignUp}
           disabled={loading}
         >
-          <Text style={styles.secondaryBtnText}>Registracija</Text>
+          <Text style={styles.secondaryBtnText}>{STRINGS.auth.signUpButton}</Text>
         </Pressable>
       </ScrollView>
     </KeyboardAvoidingView>

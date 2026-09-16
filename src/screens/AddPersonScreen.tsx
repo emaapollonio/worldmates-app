@@ -25,6 +25,7 @@ import { insertPerson, updatePerson, getPerson, type EditablePersonFields } from
 import { uploadPersonPhotos } from '../lib/storage';
 import { geocodeLocation } from '../lib/geocoding';
 import { colors } from '../theme/colors';
+import { STRINGS } from '../constants/strings';
 
 /** Loči že naložene (remote) fotografije od na novo izbranih lokalnih (file://…). */
 function isRemoteUrl(uri: string): boolean {
@@ -41,11 +42,11 @@ type ContactOption = {
 };
 
 const CONTACT_OPTIONS: ContactOption[] = [
-  { type: 'phone', label: 'Telefon', icon: 'call-outline', placeholder: '+386 40 123 456', keyboardType: 'phone-pad', autoCapitalize: 'none' },
-  { type: 'whatsapp', label: 'WhatsApp', icon: 'logo-whatsapp', placeholder: '+386 40 123 456', keyboardType: 'phone-pad', autoCapitalize: 'none' },
-  { type: 'instagram', label: 'Instagram', icon: 'logo-instagram', placeholder: '@uporabnisko_ime', keyboardType: 'default', autoCapitalize: 'none' },
-  { type: 'telegram', label: 'Telegram', icon: 'paper-plane-outline', placeholder: '@uporabnisko_ime', keyboardType: 'default', autoCapitalize: 'none' },
-  { type: 'email', label: 'E-pošta', icon: 'mail-outline', placeholder: 'ime@primer.com', keyboardType: 'email-address', autoCapitalize: 'none' },
+  { type: 'phone', label: STRINGS.contactLabels.phone, icon: 'call-outline', placeholder: '+386 40 123 456', keyboardType: 'phone-pad', autoCapitalize: 'none' },
+  { type: 'whatsapp', label: STRINGS.contactLabels.whatsapp, icon: 'logo-whatsapp', placeholder: '+386 40 123 456', keyboardType: 'phone-pad', autoCapitalize: 'none' },
+  { type: 'instagram', label: STRINGS.contactLabels.instagram, icon: 'logo-instagram', placeholder: '@uporabnisko_ime', keyboardType: 'default', autoCapitalize: 'none' },
+  { type: 'telegram', label: STRINGS.contactLabels.telegram, icon: 'paper-plane-outline', placeholder: '@uporabnisko_ime', keyboardType: 'default', autoCapitalize: 'none' },
+  { type: 'email', label: STRINGS.contactLabels.email, icon: 'mail-outline', placeholder: 'ime@primer.com', keyboardType: 'email-address', autoCapitalize: 'none' },
 ];
 
 /**
@@ -66,7 +67,7 @@ function describeError(e: unknown): string {
   try {
     return JSON.stringify(e);
   } catch {
-    return 'Neznana napaka';
+    return STRINGS.common.unknownError;
   }
 }
 
@@ -104,7 +105,7 @@ export default function AddPersonScreen() {
         const row = await getPerson(personId);
         if (cancelled) return;
         if (!row) {
-          setLoadError('Osebe ni bilo mogoče najti.');
+          setLoadError(STRINGS.addPerson.loadErrorNotFound);
           return;
         }
         setFirstName(row.first_name);
@@ -120,7 +121,7 @@ export default function AddPersonScreen() {
       } catch (e) {
         if (!cancelled) {
           console.error('[AddPerson] nalaganje osebe za urejanje ni uspelo:', e);
-          setLoadError(e instanceof Error ? e.message : 'Nalaganje ni uspelo.');
+          setLoadError(e instanceof Error ? e.message : STRINGS.addPerson.loadErrorGeneric);
         }
       } finally {
         if (!cancelled) setLoadingExisting(false);
@@ -145,7 +146,7 @@ export default function AddPersonScreen() {
       if (source === 'camera') {
         const perm = await ImagePicker.requestCameraPermissionsAsync();
         if (!perm.granted) {
-          Alert.alert('Ni dovoljenja', 'Za fotografiranje omogoči dostop do kamere.');
+          Alert.alert(STRINGS.addPerson.cameraPermissionTitle, STRINGS.addPerson.cameraPermissionMessage);
           return;
         }
         const res = await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [1, 1], quality: 0.7 });
@@ -155,7 +156,7 @@ export default function AddPersonScreen() {
       } else {
         const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (!perm.granted) {
-          Alert.alert('Ni dovoljenja', 'Za izbiro slike omogoči dostop do galerije.');
+          Alert.alert(STRINGS.addPerson.cameraPermissionTitle, STRINGS.addPerson.galleryPermissionMessage);
           return;
         }
         const res = await ImagePicker.launchImageLibraryAsync({
@@ -169,18 +170,18 @@ export default function AddPersonScreen() {
       }
     } catch (e) {
       console.warn('[AddPerson] napaka pri izbiri fotografije', e);
-      Alert.alert('Napaka', 'Fotografije ni bilo mogoče naložiti.');
+      Alert.alert(STRINGS.common.error, STRINGS.addPerson.photoLoadErrorMessage);
     }
   };
 
   const onPhotoPress = () => {
-    Alert.alert('Fotografije prijatelja', 'Izberi vir (v galeriji lahko izbereš več naenkrat)', [
-      { text: 'Kamera', onPress: () => pickFrom('camera') },
-      { text: 'Galerija', onPress: () => pickFrom('library') },
+    Alert.alert(STRINGS.addPerson.photoActionSheetTitle, STRINGS.addPerson.photoActionSheetMessage, [
+      { text: STRINGS.addPerson.cameraOption, onPress: () => pickFrom('camera') },
+      { text: STRINGS.addPerson.galleryOption, onPress: () => pickFrom('library') },
       ...(photoUris.length > 0
-        ? [{ text: 'Odstrani vse fotografije', style: 'destructive' as const, onPress: () => setPhotoUris([]) }]
+        ? [{ text: STRINGS.addPerson.removeAllPhotosOption, style: 'destructive' as const, onPress: () => setPhotoUris([]) }]
         : []),
-      { text: 'Prekliči', style: 'cancel' as const },
+      { text: STRINGS.common.cancel, style: 'cancel' as const },
     ]);
   };
 
@@ -233,12 +234,12 @@ export default function AddPersonScreen() {
     if (saving) return;
 
     const missing: string[] = [];
-    if (!firstName.trim()) missing.push('ime');
-    if (!lastName.trim()) missing.push('priimek');
-    if (!country.trim()) missing.push('država');
-    if (!city.trim()) missing.push('kraj');
+    if (!firstName.trim()) missing.push(STRINGS.addPerson.missingFieldNames.firstName);
+    if (!lastName.trim()) missing.push(STRINGS.addPerson.missingFieldNames.lastName);
+    if (!country.trim()) missing.push(STRINGS.addPerson.missingFieldNames.country);
+    if (!city.trim()) missing.push(STRINGS.addPerson.missingFieldNames.city);
     if (missing.length > 0) {
-      Alert.alert('Manjkajoči podatki', `Izpolni še: ${missing.join(', ')}.`);
+      Alert.alert(STRINGS.addPerson.missingFieldsTitle, `${STRINGS.addPerson.missingFieldsPrefix}${missing.join(', ')}.`);
       return;
     }
 
@@ -248,8 +249,8 @@ export default function AddPersonScreen() {
       const location = await geocodeLocation(city.trim(), country.trim());
       if (!location) {
         Alert.alert(
-          'Lokacije ni bilo mogoče najti',
-          `Za "${city.trim()}, ${country.trim()}" nismo našli koordinat. Preveri zapis kraja/države in poskusi znova.`,
+          STRINGS.addPerson.locationNotFoundTitle,
+          STRINGS.addPerson.locationNotFoundMessage(city.trim(), country.trim()),
         );
         return;
       }
@@ -315,7 +316,7 @@ export default function AddPersonScreen() {
         };
         const row = await updatePerson(personId, fields);
         console.log('[AddPerson] posodobljeno v Supabase:\n' + JSON.stringify(row, null, 2));
-        Toast.show({ type: 'success', text1: 'Oseba posodobljena', visibilityTime: 2000 });
+        Toast.show({ type: 'success', text1: STRINGS.addPerson.savedToastEdit, visibilityTime: 2000 });
       } else {
         const draft: PersonDraft = {
           firstName: firstName.trim(),
@@ -337,7 +338,7 @@ export default function AddPersonScreen() {
         };
         const row = await insertPerson(draft);
         console.log('[AddPerson] shranjeno v Supabase:\n' + JSON.stringify(row, null, 2));
-        Toast.show({ type: 'success', text1: 'Oseba shranjena', visibilityTime: 2000 });
+        Toast.show({ type: 'success', text1: STRINGS.addPerson.savedToastAdd, visibilityTime: 2000 });
       }
       resetForm();
       // Nazaj na zaslon, od koder je bil obrazec odprt (Zemljevid/Seznam/Profil) –
@@ -345,7 +346,7 @@ export default function AddPersonScreen() {
       navigation.goBack();
     } catch (e) {
       console.error('[AddPerson] napaka pri shranjevanju v Supabase:', e);
-      Alert.alert('Napaka pri shranjevanju', describeError(e));
+      Alert.alert(STRINGS.addPerson.saveErrorTitle, describeError(e));
     } finally {
       setSaving(false);
       setSavePhase('idle');
@@ -366,7 +367,7 @@ export default function AddPersonScreen() {
         <Ionicons name="alert-circle-outline" size={40} color={colors.textMuted} />
         <Text style={styles.loadErrorText}>{loadError}</Text>
         <Pressable style={styles.outlineBtn} onPress={() => navigation.goBack()}>
-          <Text style={styles.outlineBtnText}>Nazaj</Text>
+          <Text style={styles.outlineBtnText}>{STRINGS.common.back}</Text>
         </Pressable>
       </View>
     );
@@ -384,7 +385,7 @@ export default function AddPersonScreen() {
       >
         <View style={styles.privacyBanner}>
           <Ionicons name="lock-closed-outline" size={15} color={colors.accentDark} />
-          <Text style={styles.privacyText}>Zasebno – podatki so shranjeni samo na tvoji napravi.</Text>
+          <Text style={styles.privacyText}>{STRINGS.addPerson.privacyNotice}</Text>
         </View>
 
         {/* Fotografija + ime/priimek */}
@@ -402,22 +403,22 @@ export default function AddPersonScreen() {
 
           <View style={styles.photoRowFields}>
             <View>
-              <Text style={styles.label}>Ime *</Text>
+              <Text style={styles.label}>{STRINGS.addPerson.firstNameLabel}</Text>
               <TextInput
                 style={styles.input}
                 value={firstName}
                 onChangeText={setFirstName}
-                placeholder="npr. Marco"
+                placeholder={STRINGS.addPerson.firstNamePlaceholder}
                 placeholderTextColor={colors.textMuted}
               />
             </View>
             <View>
-              <Text style={styles.label}>Priimek *</Text>
+              <Text style={styles.label}>{STRINGS.addPerson.lastNameLabel}</Text>
               <TextInput
                 style={styles.input}
                 value={lastName}
                 onChangeText={setLastName}
-                placeholder="npr. Rossi"
+                placeholder={STRINGS.addPerson.lastNamePlaceholder}
                 placeholderTextColor={colors.textMuted}
               />
             </View>
@@ -425,50 +426,44 @@ export default function AddPersonScreen() {
         </View>
 
         {/* Lokacija */}
-        <Text style={styles.sectionTitle}>Kje živi? *</Text>
+        <Text style={styles.sectionTitle}>{STRINGS.addPerson.locationSectionTitle}</Text>
         <View style={styles.row}>
           <View style={styles.flex}>
-            <Text style={styles.label}>Država</Text>
+            <Text style={styles.label}>{STRINGS.addPerson.countryLabel}</Text>
             <TextInput
               style={styles.input}
               value={country}
               onChangeText={setCountry}
-              placeholder="Italija"
+              placeholder={STRINGS.addPerson.countryPlaceholder}
               placeholderTextColor={colors.textMuted}
             />
           </View>
           <View style={styles.flex}>
-            <Text style={styles.label}>Kraj</Text>
+            <Text style={styles.label}>{STRINGS.addPerson.cityLabel}</Text>
             <TextInput
               style={styles.input}
               value={city}
               onChangeText={setCity}
-              placeholder="Rim"
+              placeholder={STRINGS.addPerson.cityPlaceholder}
               placeholderTextColor={colors.textMuted}
             />
           </View>
         </View>
-        <Text style={styles.hint}>
-          Koordinate se ob shranjevanju samodejno poiščejo (OpenStreetMap / Nominatim) glede na
-          vpisano državo in kraj.
-        </Text>
+        <Text style={styles.hint}>{STRINGS.addPerson.locationHint}</Text>
 
         {/* Kraj srečanja (neobvezno) */}
-        <Text style={styles.sectionTitle}>Kje sta se spoznala?</Text>
+        <Text style={styles.sectionTitle}>{STRINGS.addPerson.metLocationSectionTitle}</Text>
         <TextInput
           style={styles.input}
           value={metLocation}
           onChangeText={setMetLocation}
-          placeholder="npr. Hostel Oasis, Lizbona (neobvezno)"
+          placeholder={STRINGS.addPerson.metLocationPlaceholder}
           placeholderTextColor={colors.textMuted}
         />
-        <Text style={styles.hint}>
-          Če se razlikuje od kraja bivanja – tudi to se samodejno geokodira, za pogled "Kje smo se
-          spoznali" na zemljevidu.
-        </Text>
+        <Text style={styles.hint}>{STRINGS.addPerson.metLocationHint}</Text>
 
         {/* Kontakt */}
-        <Text style={styles.sectionTitle}>Kontaktna platforma</Text>
+        <Text style={styles.sectionTitle}>{STRINGS.addPerson.contactSectionTitle}</Text>
         <View style={styles.contactRow}>
           {CONTACT_OPTIONS.map((opt) => {
             const active = opt.type === contactType;
@@ -502,7 +497,7 @@ export default function AddPersonScreen() {
         />
 
         {/* Dodatne (spominske) fotografije */}
-        <Text style={styles.sectionTitle}>Fotografije</Text>
+        <Text style={styles.sectionTitle}>{STRINGS.addPerson.photosSectionTitle}</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.galleryRow}>
           {photoUris.slice(1).map((uri) => (
             <View key={uri} style={styles.galleryThumbWrap}>
@@ -516,10 +511,10 @@ export default function AddPersonScreen() {
             <Ionicons name="add" size={22} color={colors.textMuted} />
           </Pressable>
         </ScrollView>
-        <Text style={styles.hint}>Prva dodana slika je profilna; tu dodaš še skupne spominske slike.</Text>
+        <Text style={styles.hint}>{STRINGS.addPerson.photosHint}</Text>
 
         {/* Tagi */}
-        <Text style={styles.sectionTitle}>Tagi</Text>
+        <Text style={styles.sectionTitle}>{STRINGS.addPerson.tagsSectionTitle}</Text>
         {tags.length > 0 ? (
           <View style={styles.tagRow}>
             {tags.map((tag) => (
@@ -537,7 +532,7 @@ export default function AddPersonScreen() {
           value={tagInput}
           onChangeText={onTagInputChange}
           onSubmitEditing={onTagSubmit}
-          placeholder="npr. hostel, sopotnik (Enter ali vejica doda tag)"
+          placeholder={STRINGS.addPerson.tagsPlaceholder}
           placeholderTextColor={colors.textMuted}
           autoCapitalize="none"
           autoCorrect={false}
@@ -546,12 +541,12 @@ export default function AddPersonScreen() {
         />
 
         {/* Beležka */}
-        <Text style={styles.sectionTitle}>Zaznamki / opombe</Text>
+        <Text style={styles.sectionTitle}>{STRINGS.addPerson.noteSectionTitle}</Text>
         <TextInput
           style={[styles.input, styles.textarea]}
           value={note}
           onChangeText={setNote}
-          placeholder="Kje sta se spoznala, kaj sta počela skupaj, priporočila ..."
+          placeholder={STRINGS.addPerson.notePlaceholder}
           placeholderTextColor={colors.textMuted}
           multiline
           numberOfLines={4}
@@ -574,14 +569,14 @@ export default function AddPersonScreen() {
           )}
           <Text style={styles.saveBtnText}>
             {savePhase === 'geocoding'
-              ? 'Iščem lokacijo …'
+              ? STRINGS.addPerson.savingLocation
               : savePhase === 'uploading'
-                ? 'Nalagam fotografije …'
+                ? STRINGS.addPerson.savingPhotos
                 : saving
-                  ? 'Shranjujem …'
+                  ? STRINGS.addPerson.saving
                   : isEditing
-                    ? 'Shrani spremembe'
-                    : 'Shrani v atlas'}
+                    ? STRINGS.addPerson.saveButtonEdit
+                    : STRINGS.addPerson.saveButtonAdd}
           </Text>
         </Pressable>
       </ScrollView>

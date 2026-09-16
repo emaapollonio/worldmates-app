@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import type { TabParamList, RootStackParamList } from './types';
 import { colors } from '../theme/colors';
+import { STRINGS } from '../constants/strings';
 import MapScreen from '../screens/MapScreen';
 import ListScreen from '../screens/ListScreen';
 import TripsScreen from '../screens/TripsScreen';
@@ -26,7 +27,7 @@ function CenterAddButton() {
     <View style={styles.fabContainer} pointerEvents="box-none">
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Dodaj prijatelja"
+        accessibilityLabel={STRINGS.tabNavigator.addPersonAccessibilityLabel}
         onPress={() => navigation.navigate('AddPerson')}
         style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
       >
@@ -51,7 +52,7 @@ export default function TabNavigator() {
         name="Map"
         component={MapScreen}
         options={{
-          tabBarLabel: 'Zemljevid',
+          tabBarLabel: STRINGS.tabs.map,
           tabBarIcon: ({ color, size }) => <Ionicons name="map-outline" size={size} color={color} />,
         }}
       />
@@ -59,7 +60,7 @@ export default function TabNavigator() {
         name="List"
         component={ListScreen}
         options={{
-          tabBarLabel: 'Prijatelji',
+          tabBarLabel: STRINGS.tabs.friends,
           tabBarIcon: ({ color, size }) => <Ionicons name="people-outline" size={size} color={color} />,
         }}
       />
@@ -75,7 +76,7 @@ export default function TabNavigator() {
         name="Trips"
         component={TripsScreen}
         options={{
-          tabBarLabel: 'Potovanja',
+          tabBarLabel: STRINGS.tabs.trips,
           tabBarIcon: ({ color, size }) => <Ionicons name="compass-outline" size={size} color={color} />,
         }}
       />
@@ -83,7 +84,7 @@ export default function TabNavigator() {
         name="Profile"
         component={ProfileScreen}
         options={{
-          tabBarLabel: 'Profil',
+          tabBarLabel: STRINGS.tabs.profile,
           tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" size={size} color={color} />,
         }}
       />

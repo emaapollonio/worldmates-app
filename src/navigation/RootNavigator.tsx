@@ -6,6 +6,7 @@ import type { Session } from '@supabase/supabase-js';
 import type { RootStackParamList } from './types';
 import { colors } from '../theme/colors';
 import { supabase } from '../lib/supabase';
+import { STRINGS } from '../constants/strings';
 import TabNavigator from './TabNavigator';
 import AuthScreen from '../screens/AuthScreen';
 import AddPersonScreen from '../screens/AddPersonScreen';
@@ -57,14 +58,14 @@ export default function RootNavigator() {
             name="AddPerson"
             component={AddPersonScreen}
             options={({ route }) => ({
-              title: route.params?.personId ? 'Uredi osebo' : 'Dodaj prijatelja',
+              title: route.params?.personId ? STRINGS.navigation.editPersonTitle : STRINGS.navigation.addPersonTitle,
               presentation: 'modal',
             })}
           />
           <Stack.Screen
             name="PersonProfile"
             component={PersonProfileScreen}
-            options={{ title: 'Podrobnosti prijatelja' }}
+            options={{ title: STRINGS.navigation.personProfileTitle }}
           />
         </>
       ) : (

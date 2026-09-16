@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import type { RootStackParamList } from '../navigation/types';
 import { listPeople, matchesQuery, matchesTags, collectUniqueTags, type PeopleRow } from '../lib/people';
 import { colors, colorForLetter } from '../theme/colors';
+import { STRINGS } from '../constants/strings';
 import SearchBar from '../components/SearchBar';
 import TagFilterRow from '../components/TagFilterRow';
 import EmptyState from '../components/EmptyState';
@@ -214,7 +215,7 @@ export default function MapScreen() {
             style={({ pressed }) => [styles.refreshBtn, pressed && styles.refreshBtnPressed]}
             onPress={onRefresh}
             disabled={refreshing}
-            accessibilityLabel="Osveži pine"
+            accessibilityLabel={STRINGS.map.refreshAccessibilityLabel}
           >
             {refreshing ? (
               <ActivityIndicator size="small" color={colors.onPrimary} />
@@ -230,7 +231,7 @@ export default function MapScreen() {
             onPress={() => setViewMode('lives')}
           >
             <Text style={[styles.viewModeText, viewMode === 'lives' && styles.viewModeTextActive]}>
-              Kje živijo
+              {STRINGS.map.livesOption}
             </Text>
           </Pressable>
           <Pressable
@@ -238,7 +239,7 @@ export default function MapScreen() {
             onPress={() => setViewMode('met')}
           >
             <Text style={[styles.viewModeText, viewMode === 'met' && styles.viewModeTextActive]}>
-              Kje smo se spoznali
+              {STRINGS.map.metOption}
             </Text>
           </Pressable>
         </View>
@@ -250,13 +251,13 @@ export default function MapScreen() {
         {/* Status: napaka */}
         {error ? (
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Napaka pri nalaganju</Text>
+            <Text style={styles.cardTitle}>{STRINGS.map.loadErrorTitle}</Text>
             <Text style={styles.cardText}>{error}</Text>
             <Pressable
               style={({ pressed }) => [styles.retryBtn, pressed && styles.retryBtnPressed]}
               onPress={() => loadPeople()}
             >
-              <Text style={styles.retryBtnText}>Poskusi znova</Text>
+              <Text style={styles.retryBtnText}>{STRINGS.common.retry}</Text>
             </Pressable>
           </View>
         ) : null}
@@ -264,14 +265,14 @@ export default function MapScreen() {
         {/* Status: iskanje/filter brez zadetkov */}
         {!loading && !error && people.length > 0 && hasActiveFilter && visiblePeople.length === 0 ? (
           <View style={styles.pill}>
-            <Text style={styles.pillText}>Ni zadetkov za izbrano iskanje/filter.</Text>
+            <Text style={styles.pillText}>{STRINGS.map.noFilterResults}</Text>
           </View>
         ) : null}
 
         {/* Status: pogled "Kje smo se spoznali" brez geokodiranih krajev srečanja */}
         {!loading && !error && visiblePeople.length > 0 && pinsForView.length === 0 && viewMode === 'met' ? (
           <View style={styles.pill}>
-            <Text style={styles.pillText}>Nobena oseba (še) nima izpolnjenega kraja srečanja.</Text>
+            <Text style={styles.pillText}>{STRINGS.map.noMetLocations}</Text>
           </View>
         ) : null}
       </SafeAreaView>
@@ -279,7 +280,7 @@ export default function MapScreen() {
       {/* Nalaganje: prvi prikaz, dokler ni podatkov */}
       {loading && people.length === 0 ? (
         <View style={StyleSheet.absoluteFill}>
-          <LoadingState message="Nalagam osebe …" />
+          <LoadingState message={STRINGS.map.loadingMessage} />
         </View>
       ) : null}
 
@@ -288,9 +289,9 @@ export default function MapScreen() {
         <View style={StyleSheet.absoluteFill}>
           <EmptyState
             icon="map-outline"
-            title="Tvoj atlas prijateljstev še čaka"
-            subtitle="Dodaj prvo osebo, ki si jo spoznal/-a na potovanju."
-            buttonLabel="Dodaj osebo"
+            title={STRINGS.emptyState.peopleTitle}
+            subtitle={STRINGS.emptyState.peopleSubtitle}
+            buttonLabel={STRINGS.emptyState.addPersonButton}
             onButtonPress={() => navigation.navigate('AddPerson')}
           />
         </View>

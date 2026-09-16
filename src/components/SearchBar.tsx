@@ -2,6 +2,7 @@ import React from 'react';
 import { View, TextInput, Pressable, StyleSheet, type ViewStyle, type StyleProp } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
+import { STRINGS } from '../constants/strings';
 
 type Props = {
   value: string;
@@ -19,7 +20,7 @@ type Props = {
 export default function SearchBar({
   value,
   onChangeText,
-  placeholder = 'Išči po imenu, kraju ali državi …',
+  placeholder = STRINGS.searchBar.placeholder,
   containerStyle,
 }: Props) {
   return (

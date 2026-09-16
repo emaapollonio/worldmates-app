@@ -8,15 +8,16 @@ import { Ionicons } from '@expo/vector-icons';
 import type { RootStackParamList } from '../navigation/types';
 import { listPeople, matchesLocation, type PeopleRow } from '../lib/people';
 import { colors } from '../theme/colors';
+import { STRINGS } from '../constants/strings';
 import SearchBar from '../components/SearchBar';
 
 /** Slovensko sklanjanje "oseba" glede na število (1 oseba, 2 osebi, 3-4 osebe, 5+ oseb). */
 function personWord(n: number): string {
   const mod100 = n % 100;
-  if (mod100 === 1) return 'oseba';
-  if (mod100 === 2) return 'osebi';
-  if (mod100 === 3 || mod100 === 4) return 'osebe';
-  return 'oseb';
+  if (mod100 === 1) return STRINGS.trips.personWordSingular;
+  if (mod100 === 2) return STRINGS.trips.personWordDual;
+  if (mod100 === 3 || mod100 === 4) return STRINGS.trips.personWordFew;
+  return STRINGS.trips.personWordMany;
 }
 
 export default function TripsScreen() {
@@ -62,13 +63,9 @@ export default function TripsScreen() {
   return (
     <SafeAreaView edges={['top']} style={styles.screen}>
       <View style={styles.topBar}>
-        <Text style={styles.title}>Potovanja</Text>
-        <Text style={styles.subtitle}>Vnesi kraj ali državo, ki jo planiraš obiskati.</Text>
-        <SearchBar
-          value={destination}
-          onChangeText={setDestination}
-          placeholder="Kam potuješ? (kraj ali država)"
-        />
+        <Text style={styles.title}>{STRINGS.trips.title}</Text>
+        <Text style={styles.subtitle}>{STRINGS.trips.subtitle}</Text>
+        <SearchBar value={destination} onChangeText={setDestination} placeholder={STRINGS.trips.searchPlaceholder} />
       </View>
 
       {loading && people.length === 0 ? (
@@ -79,25 +76,23 @@ export default function TripsScreen() {
         <View style={styles.centered}>
           <Text style={styles.errorText}>{error}</Text>
           <Pressable style={styles.retryBtn} onPress={() => load()}>
-            <Text style={styles.retryBtnText}>Poskusi znova</Text>
+            <Text style={styles.retryBtnText}>{STRINGS.common.retry}</Text>
           </Pressable>
         </View>
       ) : !trimmedDestination ? (
         <View style={styles.centered}>
           <Ionicons name="airplane-outline" size={40} color={colors.textMuted} />
-          <Text style={styles.hintText}>
-            Vnesi kraj ali državo zgoraj, da vidiš, koga že poznaš tam.
-          </Text>
+          <Text style={styles.hintText}>{STRINGS.trips.promptHint}</Text>
         </View>
       ) : matches.length === 0 ? (
         <View style={styles.centered}>
           <Ionicons name="sad-outline" size={40} color={colors.textMuted} />
-          <Text style={styles.hintText}>Še ne poznaš nikogar tam.</Text>
+          <Text style={styles.hintText}>{STRINGS.trips.noMatches}</Text>
         </View>
       ) : (
         <>
           <Text style={styles.resultHeading}>
-            V {trimmedDestination} poznaš {matches.length} {personWord(matches.length)}
+            {STRINGS.trips.resultHeading(trimmedDestination, matches.length, personWord(matches.length))}
           </Text>
           <FlatList
             data={matches}

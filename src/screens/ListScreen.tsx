@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import type { RootStackParamList } from '../navigation/types';
 import { listPeople, matchesQuery, matchesTags, collectUniqueTags, type PeopleRow } from '../lib/people';
 import { colors } from '../theme/colors';
+import { STRINGS } from '../constants/strings';
 import SearchBar from '../components/SearchBar';
 import TagFilterRow from '../components/TagFilterRow';
 import EmptyState from '../components/EmptyState';
@@ -15,9 +16,9 @@ import EmptyState from '../components/EmptyState';
 type SortKey = 'alpha' | 'metDate' | 'country';
 
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
-  { key: 'alpha', label: 'Abeceda' },
-  { key: 'metDate', label: 'Datum srečanja' },
-  { key: 'country', label: 'Država' },
+  { key: 'alpha', label: STRINGS.list.sortAlpha },
+  { key: 'metDate', label: STRINGS.list.sortMetDate },
+  { key: 'country', label: STRINGS.list.sortCountry },
 ];
 
 /** Ena siva "okostna" vrstica – prikazana med prvim nalaganjem namesto spinnerja. */
@@ -134,7 +135,7 @@ export default function ListScreen() {
       ) : null}
 
       <View style={styles.sortRow}>
-        <Text style={styles.sortLabel}>Razvrsti:</Text>
+        <Text style={styles.sortLabel}>{STRINGS.list.sortLabel}</Text>
         {SORT_OPTIONS.map((opt) => {
           const active = opt.key === sortKey;
           return (
@@ -162,7 +163,7 @@ export default function ListScreen() {
         <View style={styles.centered}>
           <Text style={styles.errorText}>{error}</Text>
           <Pressable style={styles.retryBtn} onPress={() => load()}>
-            <Text style={styles.retryBtnText}>Poskusi znova</Text>
+            <Text style={styles.retryBtnText}>{STRINGS.common.retry}</Text>
           </Pressable>
         </View>
       ) : (
@@ -178,14 +179,14 @@ export default function ListScreen() {
             people.length === 0 ? (
               <EmptyState
                 icon="people-outline"
-                title="Tvoj atlas prijateljstev še čaka"
-                subtitle="Dodaj prvo osebo, ki si jo spoznal/-a na potovanju."
-                buttonLabel="Dodaj osebo"
+                title={STRINGS.emptyState.peopleTitle}
+                subtitle={STRINGS.emptyState.peopleSubtitle}
+                buttonLabel={STRINGS.emptyState.addPersonButton}
                 onButtonPress={() => navigation.navigate('AddPerson')}
               />
             ) : (
               <View style={styles.centered}>
-                <Text style={styles.emptyText}>Ni zadetkov za tvoje iskanje/filter.</Text>
+                <Text style={styles.emptyText}>{STRINGS.list.noFilterResults}</Text>
               </View>
             )
           }
