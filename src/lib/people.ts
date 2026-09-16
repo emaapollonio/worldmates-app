@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import type { ContactType, PersonDraft } from '../types/person';
+import { continentForCountry } from './continents';
 
 /** Vrstica tabele `people` v Supabase (snake_case, kot v bazi). */
 export type PeopleRow = {
@@ -140,4 +141,21 @@ export function matchesLocation(person: PeopleRow, query: string): boolean {
   const q = query.trim().toLowerCase();
   if (!q) return false;
   return person.country.toLowerCase().includes(q) || person.city.toLowerCase().includes(q);
+}
+
+export type PeopleStats = {
+  totalPeople: number;
+  countryCount: number;
+  continentCount: number;
+};
+
+/** Statistika za profil: št. oseb, unikatnih držav in (grobo ocenjenih) celin. */
+export function computeStats(people: PeopleRow[]): PeopleStats {
+  const countries = new Set(people.map((p) => p.country.trim().toLowerCase()));
+  const continents = new Set(people.map((p) => continentForCountry(p.country)));
+  return {
+    totalPeople: people.length,
+    countryCount: countries.size,
+    continentCount: continents.size,
+  };
 }
