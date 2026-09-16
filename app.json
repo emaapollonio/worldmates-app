@@ -11,10 +11,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "backgroundColor": "#C0562B",
+        "foregroundImage": "./assets/adaptive-icon.png"
       },
       "predictiveBackGestureEnabled": false
     },
@@ -27,6 +25,15 @@
         {
           "photosPermission": "WorldMates potrebuje dostop do galerije, da dodaš fotografijo prijatelja.",
           "cameraPermission": "WorldMates potrebuje dostop do kamere, da posnameš fotografijo prijatelja."
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#C0562B",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain"
         }
       ]
     ]
