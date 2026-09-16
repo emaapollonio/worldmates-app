@@ -10,6 +10,7 @@ import { listPeople, matchesQuery, matchesTags, collectUniqueTags, type PeopleRo
 import { colors, colorForLetter } from '../theme/colors';
 import SearchBar from '../components/SearchBar';
 import TagFilterRow from '../components/TagFilterRow';
+import EmptyState from '../components/EmptyState';
 
 /** Ob prvem odprtju je zemljevid oddaljen na cel svet – uporabnik nato sam zoom-a. */
 const INITIAL_REGION: Region = {
@@ -184,13 +185,6 @@ export default function MapScreen() {
           </View>
         ) : null}
 
-        {/* Status: brez oseb (sploh) */}
-        {!loading && !error && people.length === 0 ? (
-          <View style={styles.pill}>
-            <Text style={styles.pillText}>Nimaš še nobene osebe — dodaj prvo z gumbom +</Text>
-          </View>
-        ) : null}
-
         {/* Status: iskanje/filter brez zadetkov */}
         {!loading && !error && people.length > 0 && hasActiveFilter && visiblePeople.length === 0 ? (
           <View style={styles.pill}>
@@ -198,6 +192,19 @@ export default function MapScreen() {
           </View>
         ) : null}
       </SafeAreaView>
+
+      {/* Prazen zaslon: sploh ni shranjenih oseb (namesto praznega zemljevida) */}
+      {!loading && !error && people.length === 0 ? (
+        <View style={StyleSheet.absoluteFill}>
+          <EmptyState
+            icon="map-outline"
+            title="Tvoj atlas prijateljstev še čaka"
+            subtitle="Dodaj prvo osebo, ki si jo spoznal/-a na potovanju."
+            buttonLabel="Dodaj osebo"
+            onButtonPress={() => navigation.navigate('AddPerson')}
+          />
+        </View>
+      ) : null}
     </View>
   );
 }

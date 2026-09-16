@@ -10,6 +10,7 @@ import { listPeople, matchesQuery, matchesTags, collectUniqueTags, type PeopleRo
 import { colors } from '../theme/colors';
 import SearchBar from '../components/SearchBar';
 import TagFilterRow from '../components/TagFilterRow';
+import EmptyState from '../components/EmptyState';
 
 type SortKey = 'alpha' | 'metDate' | 'country';
 
@@ -135,13 +136,19 @@ export default function ListScreen() {
           contentContainerStyle={[styles.listContent, visiblePeople.length === 0 && styles.listContentEmpty]}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           ListEmptyComponent={
-            <View style={styles.centered}>
-              <Text style={styles.emptyText}>
-                {query || selectedTags.length > 0
-                  ? 'Ni zadetkov za tvoje iskanje/filter.'
-                  : 'Nimaš še nobene osebe — dodaj prvo z gumbom +.'}
-              </Text>
-            </View>
+            people.length === 0 ? (
+              <EmptyState
+                icon="people-outline"
+                title="Tvoj atlas prijateljstev še čaka"
+                subtitle="Dodaj prvo osebo, ki si jo spoznal/-a na potovanju."
+                buttonLabel="Dodaj osebo"
+                onButtonPress={() => navigation.navigate('AddPerson')}
+              />
+            ) : (
+              <View style={styles.centered}>
+                <Text style={styles.emptyText}>Ni zadetkov za tvoje iskanje/filter.</Text>
+              </View>
+            )
           }
           renderItem={({ item }) => (
             <Pressable
