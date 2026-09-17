@@ -148,15 +148,34 @@ export function collectUniqueTags(people: PeopleRow[]): string[] {
 }
 
 /**
- * Vsi unikatni tagi, ki jih je (trenutni, prek RLS) uporabnik kadarkoli
- * uporabil na kateri koli osebi – za predloge ob dodajanju/urejanju osebe
- * (glej AddPersonScreen). Naloži samo stolpec `tags`, ne celih vrstic.
+ * Vsi unikatni tagi, ki jih je uporabnik kadarkoli uporabil na kateri koli
+ * svoji osebi – za predloge ob dodajanju/urejanju osebe (glej
+ * AddPersonScreen). Naloži samo stolpec `tags` (array), ne celih vrstic, in
+ * ga na strani odjemalca sesuje v en unikaten seznam (ekvivalent
+ * "select distinct unnest(tags)" – Postgres text[] pride iz PostgREST že kot
+ * navadno JS polje na vsaki vrstici, zato ni potreben SQL unnest).
+ * Eksplicitno filtrira po user_id (kot listPeople) namesto da se zanese
+ * samo na RLS.
  */
 export async function listAllTags(): Promise<string[]> {
-  const { data, error } = await supabase.from('people').select('tags');
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData.session?.user.id;
+
+  let query = supabase.from('people').select('tags');
+  if (userId) {
+    query = query.eq('user_id', userId);
+  }
+
+  const { data, error } = await query;
   if (error) throw error;
+
   const set = new Set<string>();
-  (data ?? []).forEach((row) => (row.tags as string[] | null)?.forEach((tag) => set.add(tag)));
+  (data ?? []).forEach((row) => {
+    (row.tags as string[] | null)?.forEach((tag) => {
+      const trimmed = tag.trim();
+      if (trimmed) set.add(trimmed);
+    });
+  });
   return Array.from(set).sort((a, b) => a.localeCompare(b, 'sl'));
 }
 
