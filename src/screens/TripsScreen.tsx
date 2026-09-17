@@ -40,7 +40,7 @@ export default function TripsScreen() {
     } catch (e) {
       if (!signal?.cancelled) {
         console.error('[TripsScreen] nalaganje ni uspelo:', e);
-        setError(e instanceof Error ? e.message : 'Oseb ni bilo mogoče naložiti.');
+        setError(e instanceof Error ? e.message : STRINGS.common.loadPeopleErrorGeneric);
       }
     } finally {
       if (!signal?.cancelled) setLoading(false);

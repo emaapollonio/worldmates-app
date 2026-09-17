@@ -28,8 +28,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "MetMap potrebuje dostop do galerije, da dodaš fotografijo prijatelja.",
-          "cameraPermission": "MetMap potrebuje dostop do kamere, da posnameš fotografijo prijatelja."
+          "photosPermission": "MetMap needs access to your photo gallery so you can add a photo of your friend.",
+          "cameraPermission": "MetMap needs access to your camera so you can take a photo of your friend."
         }
       ],
       [
