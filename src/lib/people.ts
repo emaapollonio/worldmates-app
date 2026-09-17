@@ -1,6 +1,15 @@
 import { supabase } from './supabase';
-import type { ContactType, PersonDraft } from '../types/person';
+import type { ContactType, PersonContact, PersonDraft } from '../types/person';
 import { continentForCountry, normalizeCountryName } from './continents';
+
+/** Vrstica tabele `person_contacts` v Supabase (snake_case, kot v bazi). */
+export type PersonContactRow = {
+  id: string;
+  person_id: string;
+  contact_type: ContactType;
+  contact_value: string;
+  created_at: string;
+};
 
 /** Vrstica tabele `people` v Supabase (snake_case, kot v bazi). */
 export type PeopleRow = {
@@ -15,7 +24,9 @@ export type PeopleRow = {
   city: string;
   latitude: number;
   longitude: number;
-  contact_type: ContactType;
+  /** @deprecated osebe od uvedbe person_contacts ne pišejo več v ta stolpca – uporabi person_contacts */
+  contact_type: ContactType | null;
+  /** @deprecated glej contact_type */
   contact_value: string | null;
   note: string | null;
   met_date: string | null;
@@ -25,10 +36,12 @@ export type PeopleRow = {
   met_longitude: number | null;
   tags: string[] | null;
   created_at: string;
+  /** Vsi kontakti osebe (public.person_contacts, naloženi z embedded select). */
+  person_contacts: PersonContactRow[];
 };
 
-/** Kar dejansko pošljemo v insert – brez polj, ki jih dodeli baza/insertPerson. */
-type PeopleInsert = Omit<PeopleRow, 'id' | 'created_at' | 'user_id'>;
+/** Kar dejansko pošljemo v insert – brez polj, ki jih dodeli baza/insertPerson, in brez person_contacts (ločena tabela). */
+type PeopleInsert = Omit<PeopleRow, 'id' | 'created_at' | 'user_id' | 'person_contacts'>;
 
 /**
  * Polja, ki jih obrazec za urejanje sme spremeniti – brez user_id (lastništvo se ne
@@ -47,8 +60,9 @@ function draftToRow(draft: PersonDraft): PeopleInsert {
     city: draft.city,
     latitude: draft.latitude,
     longitude: draft.longitude,
-    contact_type: draft.contactType,
-    contact_value: draft.contactValue,
+    // Kontakti gredo v person_contacts (glej replaceContactsForPerson) – ta stolpca sta ukinjena.
+    contact_type: null,
+    contact_value: null,
     note: draft.note,
     met_date: draft.metDate,
     met_location: draft.metLocation,
@@ -58,7 +72,27 @@ function draftToRow(draft: PersonDraft): PeopleInsert {
   };
 }
 
-/** Zapiše novo osebo v Supabase (z lastnikom = trenutni prijavljeni uporabnik) in vrne vrstico. */
+/**
+ * Nadomesti VSE kontakte osebe z danim seznamom (izbriše obstoječe, nato
+ * vstavi novega) – preprost "replace all" namesto ročnega diff-anja, ker
+ * kontakti nimajo lastne identitete, ki bi jo bilo treba ohranjati med
+ * urejanji. Prazen seznam samo izbriše obstoječe kontakte.
+ */
+async function replaceContactsForPerson(personId: string, contacts: PersonContact[]): Promise<PersonContactRow[]> {
+  const { error: deleteError } = await supabase.from('person_contacts').delete().eq('person_id', personId);
+  if (deleteError) throw deleteError;
+
+  if (contacts.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from('person_contacts')
+    .insert(contacts.map((c) => ({ person_id: personId, contact_type: c.type, contact_value: c.value })))
+    .select();
+  if (error) throw error;
+  return (data ?? []) as PersonContactRow[];
+}
+
+/** Zapiše novo osebo (z lastnikom = trenutni prijavljeni uporabnik) + njene kontakte in vrne vrstico. */
 export async function insertPerson(draft: PersonDraft): Promise<PeopleRow> {
   const { data: authData } = await supabase.auth.getUser();
 
@@ -69,20 +103,27 @@ export async function insertPerson(draft: PersonDraft): Promise<PeopleRow> {
     .single();
 
   if (error) throw error;
-  return data as PeopleRow;
+
+  const contacts = await replaceContactsForPerson(data.id, draft.contacts);
+  return { ...(data as PeopleRow), person_contacts: contacts };
 }
 
-/** Posodobi obstoječo osebo (brez spreminjanja user_id) in vrne posodobljeno vrstico. */
-export async function updatePerson(id: string, fields: EditablePersonFields): Promise<PeopleRow> {
+/** Posodobi obstoječo osebo (brez spreminjanja user_id) + nadomesti njene kontakte in vrne posodobljeno vrstico. */
+export async function updatePerson(
+  id: string,
+  fields: EditablePersonFields,
+  contacts: PersonContact[],
+): Promise<PeopleRow> {
   const { data, error } = await supabase.from('people').update(fields).eq('id', id).select().single();
-
   if (error) throw error;
-  return data as PeopleRow;
+
+  const contactRows = await replaceContactsForPerson(id, contacts);
+  return { ...(data as PeopleRow), person_contacts: contactRows };
 }
 
 /**
- * Naloži vse osebe (vsi stolpci) trenutnega uporabnika, najnovejše najprej.
- * Eksplicitno filtrira po user_id (poleg RLS na strani baze) – tako
+ * Naloži vse osebe (vsi stolpci + kontakti) trenutnega uporabnika, najnovejše
+ * najprej. Eksplicitno filtrira po user_id (poleg RLS na strani baze) – tako
  * statistika/seznami ne morejo prikazati tujih vrstic, tudi če bi bila RLS
  * politika kdaj napačno nastavljena.
  */
@@ -90,7 +131,7 @@ export async function listPeople(): Promise<PeopleRow[]> {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData.session?.user.id;
 
-  let query = supabase.from('people').select('*').order('created_at', { ascending: false });
+  let query = supabase.from('people').select('*, person_contacts(*)').order('created_at', { ascending: false });
   if (userId) {
     query = query.eq('user_id', userId);
   }
@@ -100,11 +141,11 @@ export async function listPeople(): Promise<PeopleRow[]> {
   return (data ?? []) as PeopleRow[];
 }
 
-/** Naloži eno osebo po id. Vrne null, če je ni. */
+/** Naloži eno osebo (+ njene kontakte) po id. Vrne null, če je ni. */
 export async function getPerson(id: string): Promise<PeopleRow | null> {
   const { data, error } = await supabase
     .from('people')
-    .select('*')
+    .select('*, person_contacts(*)')
     .eq('id', id)
     .maybeSingle();
 

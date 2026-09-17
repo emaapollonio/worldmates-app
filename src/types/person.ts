@@ -4,6 +4,12 @@
 
 export type ContactType = 'phone' | 'whatsapp' | 'instagram' | 'telegram' | 'email';
 
+/** En kontakt osebe (glej public.person_contacts) – oseba jih ima lahko poljubno mnogo, tudi nič. */
+export type PersonContact = {
+  type: ContactType;
+  value: string;
+};
+
 export interface Person {
   id: string;
   /** uporabnik, ki je osebo dodal */
@@ -18,8 +24,7 @@ export interface Person {
   city: string;
   latitude: number;
   longitude: number;
-  contactType: ContactType;
-  contactValue: string | null;
+  contacts: PersonContact[];
   note: string | null;
   /** ISO datum (YYYY-MM-DD) */
   metDate: string | null;

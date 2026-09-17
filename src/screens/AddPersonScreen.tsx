@@ -21,7 +21,7 @@ import Toast from 'react-native-toast-message';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
-import type { ContactType, PersonDraft } from '../types/person';
+import type { ContactType, PersonContact, PersonDraft } from '../types/person';
 import type { RootStackParamList } from '../navigation/types';
 import { insertPerson, updatePerson, getPerson, listAllTags, type EditablePersonFields } from '../lib/people';
 import { uploadPersonPhotos } from '../lib/storage';
@@ -35,6 +35,8 @@ import { STRINGS } from '../constants/strings';
 function isRemoteUrl(uri: string): boolean {
   return /^https?:\/\//i.test(uri);
 }
+
+type ContactEntry = { key: string; type: ContactType; value: string };
 
 type ContactOption = {
   type: ContactType;
@@ -99,8 +101,11 @@ export default function AddPersonScreen() {
   const [photoUris, setPhotoUris] = useState<string[]>([]);
   const [country, setCountry] = useState('');
   const [city, setCity] = useState('');
-  const [contactType, setContactType] = useState<ContactType>('whatsapp');
-  const [contactValue, setContactValue] = useState('');
+  const contactKeyRef = useRef(1);
+  const newContactKey = () => `c${contactKeyRef.current++}`;
+  const [contacts, setContacts] = useState<ContactEntry[]>(() =>
+    isEditing ? [] : [{ key: newContactKey(), type: 'whatsapp', value: '' }],
+  );
   const [note, setNote] = useState('');
   const [metLocation, setMetLocation] = useState('');
   const [tags, setTags] = useState<string[]>([]);
@@ -129,8 +134,9 @@ export default function AddPersonScreen() {
         setLastName(row.last_name);
         setCountry(row.country);
         setCity(row.city);
-        setContactType(row.contact_type);
-        setContactValue(row.contact_value ?? '');
+        setContacts(
+          row.person_contacts.map((c) => ({ key: newContactKey(), type: c.contact_type, value: c.contact_value })),
+        );
         setNote(row.note ?? '');
         setMetLocation(row.met_location ?? '');
         setTags(row.tags ?? []);
@@ -162,10 +168,18 @@ export default function AddPersonScreen() {
     };
   }, []);
 
-  const activeContact = useMemo(
-    () => CONTACT_OPTIONS.find((o) => o.type === contactType) ?? CONTACT_OPTIONS[0],
-    [contactType],
-  );
+  const addContact = () => {
+    setContacts((prev) => [...prev, { key: newContactKey(), type: 'whatsapp', value: '' }]);
+  };
+  const removeContact = (key: string) => {
+    setContacts((prev) => prev.filter((c) => c.key !== key));
+  };
+  const updateContactType = (key: string, type: ContactType) => {
+    setContacts((prev) => prev.map((c) => (c.key === key ? { ...c, type } : c)));
+  };
+  const updateContactValue = (key: string, value: string) => {
+    setContacts((prev) => prev.map((c) => (c.key === key ? { ...c, value } : c)));
+  };
 
   /**
    * Dodaj eno (kamera) ali več (galerija) fotografij v `photoUris`.
@@ -252,8 +266,7 @@ export default function AddPersonScreen() {
     setPhotoUris([]);
     setCountry('');
     setCity('');
-    setContactType('whatsapp');
-    setContactValue('');
+    setContacts([{ key: newContactKey(), type: 'whatsapp', value: '' }]);
     setNote('');
     setMetLocation('');
     setTags([]);
@@ -320,11 +333,13 @@ export default function AddPersonScreen() {
 
       const photoUrl = finalUrls[0] ?? null;
       const photoUrlsField = finalUrls.length > 0 ? finalUrls : null;
-      const trimmedContactValue = contactValue.trim() || null;
       const trimmedNote = note.trim() || null;
       // Ce je uporabnik nekaj natipkal, a ni pritisnil Enter/vejice, to se vseeno stejemo kot tag.
       const finalTags = tagInput.trim() ? [...tags, tagInput.trim()] : tags;
       const tagsField = finalTags.length > 0 ? finalTags : null;
+      const finalContacts: PersonContact[] = contacts
+        .filter((c) => c.value.trim())
+        .map((c) => ({ type: c.type, value: c.value.trim() }));
 
       if (isEditing && personId) {
         const fields: EditablePersonFields = {
@@ -336,15 +351,16 @@ export default function AddPersonScreen() {
           city: city.trim(),
           latitude: location.latitude,
           longitude: location.longitude,
-          contact_type: contactType,
-          contact_value: trimmedContactValue,
+          // Kontakti gredo v person_contacts (finalContacts spodaj) – ta stolpca sta ukinjena.
+          contact_type: null,
+          contact_value: null,
           note: trimmedNote,
           met_location: metLocation.trim() || null,
           met_latitude: metCoords?.latitude ?? null,
           met_longitude: metCoords?.longitude ?? null,
           tags: tagsField,
         };
-        const row = await updatePerson(personId, fields);
+        const row = await updatePerson(personId, fields, finalContacts);
         console.log('[AddPerson] posodobljeno v Supabase:\n' + JSON.stringify(row, null, 2));
         Toast.show({ type: 'success', text1: STRINGS.addPerson.savedToastEdit, visibilityTime: 2000 });
       } else {
@@ -357,8 +373,7 @@ export default function AddPersonScreen() {
           city: city.trim(),
           latitude: location.latitude,
           longitude: location.longitude,
-          contactType,
-          contactValue: trimmedContactValue,
+          contacts: finalContacts,
           note: trimmedNote,
           metDate: null,
           metLocation: metLocation.trim() || null,
@@ -505,41 +520,56 @@ export default function AddPersonScreen() {
         />
         <Text style={styles.hint}>{STRINGS.addPerson.metLocationHint}</Text>
 
-        {/* Kontakt */}
+        {/* Kontakti */}
         <Text style={styles.sectionTitle}>{STRINGS.addPerson.contactSectionTitle}</Text>
-        <View style={styles.contactRow}>
-          {CONTACT_OPTIONS.map((opt) => {
-            const active = opt.type === contactType;
-            return (
-              <Pressable
-                key={opt.type}
-                onPress={() => setContactType(opt.type)}
-                style={[styles.contactChip, active && styles.contactChipActive]}
-                accessibilityRole="button"
-                accessibilityState={{ selected: active }}
-              >
-                <Ionicons
-                  name={opt.icon}
-                  size={15}
-                  color={active ? colors.onPrimary : colors.textSecondary}
-                />
-                <Text style={[styles.contactChipText, active && styles.contactChipTextActive]}>
-                  {opt.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-        <TextInput
-          style={styles.input}
-          value={contactValue}
-          onChangeText={setContactValue}
-          placeholder={activeContact.placeholder}
-          placeholderTextColor={colors.textMuted}
-          keyboardType={activeContact.keyboardType}
-          autoCapitalize={activeContact.autoCapitalize}
-          autoCorrect={false}
-        />
+        {contacts.map((entry) => {
+          const option = CONTACT_OPTIONS.find((o) => o.type === entry.type) ?? CONTACT_OPTIONS[0];
+          return (
+            <View key={entry.key} style={styles.contactEntry}>
+              <View style={styles.contactEntryHeader}>
+                <View style={styles.contactTypeRow}>
+                  {CONTACT_OPTIONS.map((opt) => {
+                    const active = opt.type === entry.type;
+                    return (
+                      <Pressable
+                        key={opt.type}
+                        onPress={() => updateContactType(entry.key, opt.type)}
+                        style={[styles.contactChipSmall, active && styles.contactChipActive]}
+                        accessibilityRole="button"
+                        accessibilityLabel={opt.label}
+                        accessibilityState={{ selected: active }}
+                      >
+                        <Ionicons name={opt.icon} size={14} color={active ? colors.onPrimary : colors.textSecondary} />
+                      </Pressable>
+                    );
+                  })}
+                </View>
+                <Pressable
+                  onPress={() => removeContact(entry.key)}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel={STRINGS.addPerson.removeContactAccessibilityLabel}
+                >
+                  <Ionicons name="close-circle" size={20} color={colors.textMuted} />
+                </Pressable>
+              </View>
+              <TextInput
+                style={styles.input}
+                value={entry.value}
+                onChangeText={(text) => updateContactValue(entry.key, text)}
+                placeholder={option.placeholder}
+                placeholderTextColor={colors.textMuted}
+                keyboardType={option.keyboardType}
+                autoCapitalize={option.autoCapitalize}
+                autoCorrect={false}
+              />
+            </View>
+          );
+        })}
+        <Pressable style={styles.addContactBtn} onPress={addContact} accessibilityRole="button">
+          <Ionicons name="add-circle-outline" size={18} color={colors.primary} />
+          <Text style={styles.addContactBtnText}>{STRINGS.addPerson.addContactButton}</Text>
+        </Pressable>
 
         {/* Dodatne (spominske) fotografije */}
         <Text style={styles.sectionTitle}>{STRINGS.addPerson.photosSectionTitle}</Text>
@@ -751,21 +781,33 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
   },
   textarea: { minHeight: 96, paddingTop: 12 },
 
-  contactRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 10 },
-  contactChip: {
-    flexDirection: 'row',
+  contactEntry: { marginBottom: 12, gap: 6 },
+  contactEntryHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  contactTypeRow: { flexDirection: 'row', gap: 6 },
+  contactChipSmall: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
-    gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 999,
+    justifyContent: 'center',
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
   },
   contactChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  contactChipText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
-  contactChipTextActive: { color: colors.onPrimary },
+  addContactBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: colors.border,
+    marginBottom: 8,
+  },
+  addContactBtnText: { fontSize: 13, fontWeight: '600', color: colors.primary },
 
   galleryRow: { gap: 10, paddingVertical: 2 },
   galleryThumbWrap: { width: 64, height: 64 },

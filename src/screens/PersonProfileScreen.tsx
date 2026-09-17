@@ -23,7 +23,7 @@ import * as Sharing from 'expo-sharing';
 
 import type { RootStackParamList } from '../navigation/types';
 import type { ContactType } from '../types/person';
-import { getPerson, deletePerson, type PeopleRow } from '../lib/people';
+import { getPerson, deletePerson, type PeopleRow, type PersonContactRow } from '../lib/people';
 import { withAlpha, type AppColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
 import { FONT_SERIF_BOLD } from '../theme/typography';
@@ -109,12 +109,8 @@ export default function PersonProfileScreen() {
     }, [personId]),
   );
 
-  const onWrite = async () => {
-    if (!person?.contact_value) {
-      Alert.alert(STRINGS.personProfile.noContactTitle, STRINGS.personProfile.noContactSavedMessage);
-      return;
-    }
-    const url = buildContactUrl(person.contact_type, person.contact_value);
+  const onWrite = async (contact: PersonContactRow) => {
+    const url = buildContactUrl(contact.contact_type, contact.contact_value);
     if (!url) {
       Alert.alert(STRINGS.personProfile.noContactTitle, STRINGS.personProfile.noContactUrlMessage);
       return;
@@ -201,7 +197,6 @@ export default function PersonProfileScreen() {
   }
 
   const fullName = `${person.first_name} ${person.last_name}`;
-  const hasContact = !!person.contact_value;
   const hasMeeting = !!person.met_date || !!person.met_location;
   // photo_urls (novo, polje slik) ima prednost; photo_url (staro, ena slika) kot fallback.
   const photos =
@@ -243,24 +238,33 @@ export default function PersonProfileScreen() {
         </View>
       </View>
 
-      {/* Piši */}
-      <Pressable
-        style={({ pressed }) => [
-          styles.writeBtn,
-          pressed && styles.writeBtnPressed,
-          !hasContact && styles.writeBtnDisabled,
-        ]}
-        onPress={onWrite}
-        disabled={!hasContact}
-      >
-        <Ionicons name={CONTACT_ICON[person.contact_type]} size={18} color={colors.onPrimary} />
-        <Text style={styles.writeBtnText}>
-          {hasContact
-            ? `${STRINGS.personProfile.writeButtonPrefix}${CONTACT_LABEL[person.contact_type]}`
-            : STRINGS.personProfile.writeButtonNoContact}
-        </Text>
-      </Pressable>
-      {hasContact ? <Text style={styles.contactValue}>{person.contact_value}</Text> : null}
+      {/* Kontakti */}
+      {person.person_contacts.length > 0 ? (
+        <View style={styles.contactsList}>
+          {person.person_contacts.map((contact) => (
+            <Pressable
+              key={contact.id}
+              style={({ pressed }) => [styles.contactRow, pressed && styles.contactRowPressed]}
+              onPress={() => onWrite(contact)}
+              accessibilityRole="button"
+              accessibilityLabel={STRINGS.personProfile.messageAccessibilityLabel(CONTACT_LABEL[contact.contact_type])}
+            >
+              <View style={styles.contactIconWrap}>
+                <Ionicons name={CONTACT_ICON[contact.contact_type]} size={18} color={colors.onPrimary} />
+              </View>
+              <View style={styles.contactRowText}>
+                <Text style={styles.contactRowLabel}>{CONTACT_LABEL[contact.contact_type]}</Text>
+                <Text style={styles.contactRowValue}>{contact.contact_value}</Text>
+              </View>
+              <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.textMuted} />
+            </Pressable>
+          ))}
+        </View>
+      ) : (
+        <View style={styles.noContactRow}>
+          <Text style={styles.noContactText}>{STRINGS.personProfile.writeButtonNoContact}</Text>
+        </View>
+      )}
 
       {/* Tagi */}
       {person.tags && person.tags.length > 0 ? (
@@ -394,19 +398,31 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
   galleryRow: { gap: 10, paddingHorizontal: 20 },
   galleryThumb: { width: 72, height: 72, borderRadius: 14, backgroundColor: colors.surfaceMuted },
 
-  writeBtn: {
+  contactsList: { gap: 10 },
+  contactRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: colors.primary,
+    gap: 12,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
     borderRadius: 14,
-    paddingVertical: 15,
+    padding: 12,
   },
-  writeBtnPressed: { backgroundColor: colors.primaryDark },
-  writeBtnDisabled: { backgroundColor: colors.textMuted },
-  writeBtnText: { color: colors.onPrimary, fontSize: 15, fontWeight: '700' },
-  contactValue: { textAlign: 'center', marginTop: 8, fontSize: 13, color: colors.textSecondary },
+  contactRowPressed: { opacity: 0.7 },
+  contactIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  contactRowText: { flex: 1 },
+  contactRowLabel: { fontSize: 13, fontWeight: '700', color: colors.textPrimary },
+  contactRowValue: { fontSize: 12, color: colors.textSecondary, marginTop: 1 },
+  noContactRow: { alignItems: 'center', paddingVertical: 8 },
+  noContactText: { fontSize: 13, color: colors.textMuted },
 
   tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 18 },
   tag: {
