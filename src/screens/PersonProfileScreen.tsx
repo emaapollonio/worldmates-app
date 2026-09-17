@@ -233,7 +233,13 @@ export default function PersonProfileScreen() {
               </Text>
             </View>
           </View>
-          {hasMeeting ? <MetStampBadge metLocation={person.met_location} metDate={person.met_date} /> : null}
+          {hasMeeting ? (
+            <MetStampBadge
+              label="MET"
+              primary={person.met_location}
+              secondary={person.met_date ? person.met_date.slice(0, 4) : null}
+            />
+          ) : null}
         </View>
       </View>
 

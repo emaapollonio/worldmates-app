@@ -6,7 +6,7 @@ import * as ImagePicker from 'expo-image-picker';
 import Toast from 'react-native-toast-message';
 
 import { supabase } from '../lib/supabase';
-import { listPeople, computeStats, type PeopleRow } from '../lib/people';
+import { listPeople, computeStats, computeCountryCounts, type PeopleRow } from '../lib/people';
 import { getProfile, updateProfile, type EditableProfileFields, type ProfileRow } from '../lib/profiles';
 import { uploadAvatar } from '../lib/storage';
 import type { AppColors } from '../theme/colors';
@@ -14,6 +14,7 @@ import { useTheme } from '../theme/ThemeContext';
 import { FONT_SERIF_BOLD } from '../theme/typography';
 import { STRINGS } from '../constants/strings';
 import EditFieldModal from '../components/EditFieldModal';
+import MetStampBadge from '../components/MetStampBadge';
 
 type EditableField = 'display_name' | 'tagline' | 'home_country';
 
@@ -78,6 +79,7 @@ export default function ProfileScreen() {
   );
 
   const stats = useMemo(() => computeStats(people), [people]);
+  const countryCounts = useMemo(() => computeCountryCounts(people), [people]);
   const emailPrefix = userEmail?.split('@')[0] ?? '';
   const displayName = profile?.display_name?.trim() || emailPrefix;
 
@@ -203,6 +205,19 @@ export default function ProfileScreen() {
         )}
       </View>
 
+      <View style={styles.stampsSection}>
+        <Text style={styles.statsTitle}>{STRINGS.profile.stampsTitle}</Text>
+        {!loadingStats && countryCounts.length === 0 ? (
+          <Text style={styles.stampsEmpty}>{STRINGS.profile.stampsEmpty}</Text>
+        ) : (
+          <View style={styles.stampsGrid}>
+            {countryCounts.map(({ country, count }) => (
+              <MetStampBadge key={country} primary={country} secondary={STRINGS.profile.stampCount(count)} size={72} />
+            ))}
+          </View>
+        )}
+      </View>
+
       <Pressable style={({ pressed }) => [styles.logoutBtn, pressed && styles.logoutBtnPressed]} onPress={onLogout}>
         <Text style={styles.logoutBtnText}>{STRINGS.profile.logoutButton}</Text>
       </Pressable>
@@ -273,6 +288,17 @@ const createStyles = (colors: AppColors) =>
       textAlign: 'center',
     },
     statsRow: { flexDirection: 'row', gap: 10 },
+
+    stampsSection: { alignSelf: 'stretch', marginTop: 28 },
+    stampsEmpty: {
+      fontSize: 13,
+      color: colors.textMuted,
+      textAlign: 'center',
+      lineHeight: 18,
+      paddingHorizontal: 12,
+    },
+    stampsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12 },
+
     statCard: {
       flex: 1,
       alignItems: 'center',

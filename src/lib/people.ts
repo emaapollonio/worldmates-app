@@ -164,3 +164,22 @@ export function computeStats(people: PeopleRow[]): PeopleStats {
     continentCount: continents.size,
   };
 }
+
+export type CountryCount = { country: string; count: number };
+
+/**
+ * Št. oseb na državo (case-insensitive združevanje, prikazno ime = prvič
+ * vpisan zapis) – za "zbirko žigov" na profilu. Urejeno padajoče po številu.
+ */
+export function computeCountryCounts(people: PeopleRow[]): CountryCount[] {
+  const byKey = new Map<string, CountryCount>();
+  people.forEach((p) => {
+    const country = p.country.trim();
+    if (!country) return;
+    const key = country.toLowerCase();
+    const existing = byKey.get(key);
+    if (existing) existing.count += 1;
+    else byKey.set(key, { country, count: 1 });
+  });
+  return Array.from(byKey.values()).sort((a, b) => b.count - a.count || a.country.localeCompare(b.country));
+}
