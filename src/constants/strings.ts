@@ -253,12 +253,13 @@ export const STRINGS = {
 
   /** Uvodni zasloni, prikazani samo ob prvem odprtju app (glej src/lib/onboarding.ts). */
   onboarding: {
-    page1Title: 'Save every person you meet while traveling',
+    welcomeTitle: 'Welcome to MetMap',
+    welcomeSubtitle: 'Your personal atlas of friendships around the world',
+    page1Title: 'Save every person you meet',
     page1Description: 'Keep photos, contact info, and memories all in one place.',
-    page2Title: 'See them on your personal atlas',
+    page2Title: 'See them on your personal map',
     page2Description: "Every person you've met appears as a pin on your own travel map.",
-    page3Title: 'Stay connected, wherever they are',
-    page3Description: 'Reach out anytime – from home or on the road.',
+    skipButton: 'Skip',
     nextButton: 'Next',
     getStartedButton: 'Get started',
   },
