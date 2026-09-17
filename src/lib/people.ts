@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 import type { ContactType, PersonDraft } from '../types/person';
-import { continentForCountry } from './continents';
+import { continentForCountry, normalizeCountryName } from './continents';
 
 /** Vrstica tabele `people` v Supabase (snake_case, kot v bazi). */
 export type PeopleRow = {
@@ -80,13 +80,22 @@ export async function updatePerson(id: string, fields: EditablePersonFields): Pr
   return data as PeopleRow;
 }
 
-/** Naloži vse osebe (vsi stolpci), najnovejše najprej. */
+/**
+ * Naloži vse osebe (vsi stolpci) trenutnega uporabnika, najnovejše najprej.
+ * Eksplicitno filtrira po user_id (poleg RLS na strani baze) – tako
+ * statistika/seznami ne morejo prikazati tujih vrstic, tudi če bi bila RLS
+ * politika kdaj napačno nastavljena.
+ */
 export async function listPeople(): Promise<PeopleRow[]> {
-  const { data, error } = await supabase
-    .from('people')
-    .select('*')
-    .order('created_at', { ascending: false });
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData.session?.user.id;
 
+  let query = supabase.from('people').select('*').order('created_at', { ascending: false });
+  if (userId) {
+    query = query.eq('user_id', userId);
+  }
+
+  const { data, error } = await query;
   if (error) throw error;
   return (data ?? []) as PeopleRow[];
 }
@@ -169,7 +178,7 @@ export type PeopleStats = {
 
 /** Statistika za profil: št. oseb, unikatnih držav in (grobo ocenjenih) celin. */
 export function computeStats(people: PeopleRow[]): PeopleStats {
-  const countries = new Set(people.map((p) => p.country.trim().toLowerCase()));
+  const countries = new Set(people.map((p) => normalizeCountryName(p.country)));
   const continents = new Set(people.map((p) => continentForCountry(p.country)));
   return {
     totalPeople: people.length,
@@ -181,15 +190,16 @@ export function computeStats(people: PeopleRow[]): PeopleStats {
 export type CountryCount = { country: string; count: number };
 
 /**
- * Št. oseb na državo (case-insensitive združevanje, prikazno ime = prvič
- * vpisan zapis) – za "zbirko žigov" na profilu. Urejeno padajoče po številu.
+ * Št. oseb na državo (združevanje prek normalizeCountryName, prikazno ime =
+ * prvič vpisan zapis) – za "zbirko žigov" na profilu. Urejeno padajoče po
+ * številu.
  */
 export function computeCountryCounts(people: PeopleRow[]): CountryCount[] {
   const byKey = new Map<string, CountryCount>();
   people.forEach((p) => {
     const country = p.country.trim();
     if (!country) return;
-    const key = country.toLowerCase();
+    const key = normalizeCountryName(country);
     const existing = byKey.get(key);
     if (existing) existing.count += 1;
     else byKey.set(key, { country, count: 1 });

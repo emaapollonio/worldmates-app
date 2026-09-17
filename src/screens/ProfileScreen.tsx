@@ -74,13 +74,27 @@ export default function ProfileScreen() {
           setUserId(uid);
           setUserEmail(authData.user?.email ?? null);
 
-          const [profileRow, rows] = await Promise.all([
+          // allSettled namesto all: če ena od dveh poizvedb spodleti, druga
+          // (uspešna) naj še vedno posodobi svoje stanje – sicer bi npr.
+          // prehodna napaka pri getProfile pobrisala že naložene osebe in
+          // statistika bi kazala 0, čeprav so podatki dejansko na voljo.
+          const [profileResult, peopleResult] = await Promise.allSettled([
             uid ? getProfile(uid) : Promise.resolve(null),
             listPeople(),
           ]);
           if (cancelled) return;
-          setProfile(profileRow);
-          setPeople(rows);
+
+          if (profileResult.status === 'fulfilled') {
+            setProfile(profileResult.value);
+          } else {
+            console.error('[Profile] nalaganje profila ni uspelo:', profileResult.reason);
+          }
+
+          if (peopleResult.status === 'fulfilled') {
+            setPeople(peopleResult.value);
+          } else {
+            console.error('[Profile] nalaganje oseb ni uspelo:', peopleResult.reason);
+          }
         } catch (e) {
           console.error('[Profile] nalaganje ni uspelo:', e);
         } finally {

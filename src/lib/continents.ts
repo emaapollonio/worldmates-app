@@ -166,8 +166,20 @@ const CONTINENT_BY_COUNTRY: Record<string, string> = {
   'new zealand': 'Oceania',
 };
 
+/**
+ * Poenoti zapis imena države za primerjavo/združevanje: trim, lowercase,
+ * Unicode NFC normalizacija (isti znak "š" lahko pride kot en kodni znak ali
+ * kot "s" + kombinirajoči diakritik – brez normalizacije bi bili to različna
+ * niza) in strnjeni presledki (npr. "United  Kingdom" -> "united kingdom").
+ * Uporabljata jo tako continentForCountry spodaj kot computeStats/
+ * computeCountryCounts v src/lib/people.ts, da je "ista država" definirana
+ * na enem mestu.
+ */
+export function normalizeCountryName(country: string): string {
+  return country.trim().toLowerCase().normalize('NFC').replace(/\s+/g, ' ');
+}
+
 /** Vrne celino za dano državo (po imenu, brez upoštevanja velikih/malih črk). */
 export function continentForCountry(country: string): string {
-  const key = country.trim().toLowerCase();
-  return CONTINENT_BY_COUNTRY[key] ?? 'Other';
+  return CONTINENT_BY_COUNTRY[normalizeCountryName(country)] ?? 'Other';
 }
