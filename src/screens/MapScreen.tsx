@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, Image, Pressable, ActivityIndicator, Platform, StyleSheet } from 'react-native';
+import { View, Text, Image, Animated, Pressable, ActivityIndicator, Platform, StyleSheet } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE, type Region } from 'react-native-maps';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -38,7 +38,12 @@ const DETAILED_ZOOM_THRESHOLD = 20;
 type ViewMode = 'lives' | 'met';
 type Coordinate = { latitude: number; longitude: number };
 
-/** Okrogel pin: fotografija osebe (prva iz photo_urls / stari photo_url) ali začetnica imena. */
+/**
+ * Okrogel žigosan pin: fotografija osebe (prva iz photo_urls / stari photo_url)
+ * ali začetnica imena, obdana z dvema tankima obročema (zunanji v barvi teme,
+ * notranji bel razmik med fotko in obročem) – ob kliku se zunanji obroč za
+ * trenutek odebeli, kot bi bil pin ravnokar odtisnjen.
+ */
 function PersonMarker({
   person,
   coordinate,
@@ -52,29 +57,40 @@ function PersonMarker({
   const styles = useMemo(() => createStyles(colors), [colors]);
   const photoUrl = person.photo_urls?.[0] ?? person.photo_url ?? null;
   const [tracksViewChanges, setTracksViewChanges] = useState(!!photoUrl);
+  const pressAnim = useRef(new Animated.Value(0)).current;
+
+  const handlePress = () => {
+    setTracksViewChanges(true);
+    Animated.timing(pressAnim, { toValue: 1, duration: 150, useNativeDriver: false }).start();
+    onPress();
+  };
+
+  const outerBorderWidth = pressAnim.interpolate({ inputRange: [0, 1], outputRange: [3, 5] });
 
   return (
     <Marker
       coordinate={coordinate}
       title={`${person.first_name} ${person.last_name}`}
       description={`${person.city}, ${person.country}`}
-      onPress={onPress}
+      onPress={handlePress}
       tracksViewChanges={tracksViewChanges}
     >
-      <View style={styles.markerRing}>
-        {photoUrl ? (
-          <Image
-            source={{ uri: photoUrl }}
-            style={styles.markerPhoto}
-            onLoad={() => setTracksViewChanges(false)}
-            onError={() => setTracksViewChanges(false)}
-          />
-        ) : (
-          <View style={[styles.markerLetterWrap, { backgroundColor: colorForLetter(person.first_name[0] ?? '?') }]}>
-            <Text style={styles.markerLetterText}>{(person.first_name[0] ?? '?').toUpperCase()}</Text>
-          </View>
-        )}
-      </View>
+      <Animated.View style={[styles.markerStamp, { borderWidth: outerBorderWidth }]}>
+        <View style={styles.markerPhotoWrap}>
+          {photoUrl ? (
+            <Image
+              source={{ uri: photoUrl }}
+              style={styles.markerPhoto}
+              onLoad={() => setTracksViewChanges(false)}
+              onError={() => setTracksViewChanges(false)}
+            />
+          ) : (
+            <View style={[styles.markerLetterWrap, { backgroundColor: colorForLetter(person.first_name[0] ?? '?') }]}>
+              <Text style={styles.markerLetterText}>{(person.first_name[0] ?? '?').toUpperCase()}</Text>
+            </View>
+          )}
+        </View>
+      </Animated.View>
     </Marker>
   );
 }
@@ -433,21 +449,28 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
   retryBtnPressed: { backgroundColor: colors.primaryDark },
   retryBtnText: { color: colors.onPrimary, fontWeight: '600', fontSize: 13 },
 
-  markerRing: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: 2,
-    borderColor: colors.surface,
-    overflow: 'hidden',
-    backgroundColor: colors.surfaceMuted,
+  // Zunanji obroč (žig): barvna obroba + beli razmik (padding) do fotografije.
+  markerStamp: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderColor: colors.primary,
+    padding: 3,
+    backgroundColor: colors.surface,
     shadowColor: '#000',
     shadowOpacity: 0.25,
     shadowRadius: 3,
     shadowOffset: { width: 0, height: 1 },
     elevation: 3,
   },
-  markerPhoto: { width: '100%', height: '100%', borderRadius: 16 },
+  // Notranji krog s fotografijo/začetnico.
+  markerPhotoWrap: {
+    flex: 1,
+    borderRadius: 999,
+    overflow: 'hidden',
+    backgroundColor: colors.surfaceMuted,
+  },
+  markerPhoto: { width: '100%', height: '100%' },
   markerLetterWrap: { width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' },
   markerLetterText: { color: colors.onPrimary, fontWeight: '700', fontSize: 14 },
 });
