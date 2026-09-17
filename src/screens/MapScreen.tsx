@@ -11,6 +11,7 @@ import type { RootStackParamList } from '../navigation/types';
 import { listPeople, matchesQuery, matchesTags, collectUniqueTags, type PeopleRow } from '../lib/people';
 import { getCachedPeople, setCachedPeople } from '../lib/offlineCache';
 import { colorForLetter, type AppColors } from '../theme/colors';
+import { VINTAGE_MAP_STYLE } from '../theme/mapStyle';
 import { useTheme } from '../theme/ThemeContext';
 import { STRINGS } from '../constants/strings';
 import SearchBar from '../components/SearchBar';
@@ -224,6 +225,7 @@ export default function MapScreen() {
         // PROVIDER_GOOGLE samo na Androidu – v Expo Go za iOS ni na voljo Google Maps SDK
         // (Expo Go ga za iOS ne vgrajuje), zato bi eksplicitna zahteva tam pomenila prazen zemljevid.
         provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
+        customMapStyle={VINTAGE_MAP_STYLE}
         style={StyleSheet.absoluteFill}
         initialRegion={INITIAL_REGION}
         onMapReady={onMapReady}
