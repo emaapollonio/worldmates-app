@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { View, Text, Image, FlatList, Pressable, RefreshControl, StyleSheet } from 'react-native';
+import { View, Text, Image, FlatList, SectionList, Pressable, RefreshControl, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import type { RootStackParamList } from '../navigation/types';
 import { listPeople, matchesQuery, matchesTags, collectUniqueTags, type PeopleRow } from '../lib/people';
 import { getCachedPeople, setCachedPeople } from '../lib/offlineCache';
+import { continentForCountry } from '../lib/continents';
 import type { AppColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
 import { FONT_SERIF_BOLD } from '../theme/typography';
@@ -17,13 +18,38 @@ import TagFilterRow from '../components/TagFilterRow';
 import EmptyState from '../components/EmptyState';
 import OfflineBanner from '../components/OfflineBanner';
 
-type SortKey = 'alpha' | 'metDate' | 'country';
+type SortKey = 'alpha' | 'metDate' | 'country' | 'continent';
 
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: 'alpha', label: STRINGS.list.sortAlpha },
   { key: 'metDate', label: STRINGS.list.sortMetDate },
   { key: 'country', label: STRINGS.list.sortCountry },
+  { key: 'continent', label: STRINGS.list.sortContinent },
 ];
+
+type ContinentSection = { title: string; data: PeopleRow[] };
+
+/** Skupine po celini (glej continentForCountry), znotraj vsake abecedno po imenu. "Other" vedno zadnji. */
+function groupByContinent(people: PeopleRow[]): ContinentSection[] {
+  const byContinent = new Map<string, PeopleRow[]>();
+  people.forEach((p) => {
+    const continent = continentForCountry(p.country);
+    const list = byContinent.get(continent);
+    if (list) list.push(p);
+    else byContinent.set(continent, [p]);
+  });
+
+  const continents = Array.from(byContinent.keys()).sort((a, b) => {
+    if (a === 'Other') return 1;
+    if (b === 'Other') return -1;
+    return a.localeCompare(b);
+  });
+
+  return continents.map((continent) => ({
+    title: continent,
+    data: [...byContinent.get(continent)!].sort((a, b) => a.first_name.localeCompare(b.first_name, 'sl')),
+  }));
+}
 
 /** Ena siva "okostna" vrstica – prikazana med prvim nalaganjem namesto spinnerja. */
 function SkeletonRow() {
@@ -42,7 +68,8 @@ function SkeletonRow() {
 
 const SKELETON_ROWS = [0, 1, 2, 3, 4, 5];
 
-function sortPeople(people: PeopleRow[], key: SortKey): PeopleRow[] {
+/** Razvrščanje za navaden (ne-sekcijski) seznam – "continent" se razreši v ListScreen prek groupByContinent. */
+function sortPeople(people: PeopleRow[], key: Exclude<SortKey, 'continent'>): PeopleRow[] {
   const sorted = [...people];
   switch (key) {
     case 'alpha':
@@ -145,10 +172,59 @@ export default function ListScreen() {
     setSelectedTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
   };
 
-  const visiblePeople = useMemo(() => {
-    const matched = people.filter((p) => matchesQuery(p, query) && matchesTags(p, selectedTags));
-    return sortPeople(matched, sortKey);
-  }, [people, query, selectedTags, sortKey]);
+  const filteredPeople = useMemo(
+    () => people.filter((p) => matchesQuery(p, query) && matchesTags(p, selectedTags)),
+    [people, query, selectedTags],
+  );
+
+  const isByContinent = sortKey === 'continent';
+  const visiblePeople = useMemo(
+    () => (isByContinent ? filteredPeople : sortPeople(filteredPeople, sortKey)),
+    [filteredPeople, sortKey, isByContinent],
+  );
+  const sections = useMemo(
+    () => (isByContinent ? groupByContinent(filteredPeople) : []),
+    [filteredPeople, isByContinent],
+  );
+
+  const renderPersonRow = ({ item }: { item: PeopleRow }) => (
+    <Pressable
+      style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+      onPress={() => navigation.navigate('PersonProfile', { personId: item.id })}
+    >
+      {item.photo_url ? (
+        <Image source={{ uri: item.photo_url }} style={styles.avatar} />
+      ) : (
+        <View style={[styles.avatar, styles.avatarPlaceholder]}>
+          <Ionicons name="person" size={20} color={colors.textMuted} />
+        </View>
+      )}
+      <View style={styles.rowText}>
+        <Text style={styles.rowName}>
+          {item.first_name} {item.last_name}
+        </Text>
+        <Text style={styles.rowLocation}>
+          {item.city}, {item.country}
+        </Text>
+      </View>
+      <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+    </Pressable>
+  );
+
+  const listEmptyComponent =
+    people.length === 0 ? (
+      <EmptyState
+        icon="people-outline"
+        title={STRINGS.emptyState.peopleTitle}
+        subtitle={STRINGS.emptyState.peopleSubtitle}
+        buttonLabel={STRINGS.emptyState.addPersonButton}
+        onButtonPress={() => navigation.navigate('AddPerson')}
+      />
+    ) : (
+      <View style={styles.centered}>
+        <Text style={styles.emptyText}>{STRINGS.list.noFilterResults}</Text>
+      </View>
+    );
 
   return (
     <SafeAreaView edges={['top']} style={styles.screen}>
@@ -202,6 +278,24 @@ export default function ListScreen() {
             <Text style={styles.retryBtnText}>{STRINGS.common.retry}</Text>
           </Pressable>
         </View>
+      ) : isByContinent ? (
+        <SectionList
+          sections={sections}
+          keyExtractor={(p) => p.id}
+          stickySectionHeadersEnabled
+          contentContainerStyle={[styles.listContent, sections.length === 0 && styles.listContentEmpty]}
+          ItemSeparatorComponent={() => <View style={styles.dashedSeparator} />}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary]} />
+          }
+          ListEmptyComponent={listEmptyComponent}
+          renderSectionHeader={({ section }) => (
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionHeaderText}>{section.title.toUpperCase()}</Text>
+            </View>
+          )}
+          renderItem={renderPersonRow}
+        />
       ) : (
         <FlatList
           data={visiblePeople}
@@ -211,44 +305,8 @@ export default function ListScreen() {
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary]} />
           }
-          ListEmptyComponent={
-            people.length === 0 ? (
-              <EmptyState
-                icon="people-outline"
-                title={STRINGS.emptyState.peopleTitle}
-                subtitle={STRINGS.emptyState.peopleSubtitle}
-                buttonLabel={STRINGS.emptyState.addPersonButton}
-                onButtonPress={() => navigation.navigate('AddPerson')}
-              />
-            ) : (
-              <View style={styles.centered}>
-                <Text style={styles.emptyText}>{STRINGS.list.noFilterResults}</Text>
-              </View>
-            )
-          }
-          renderItem={({ item }) => (
-            <Pressable
-              style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-              onPress={() => navigation.navigate('PersonProfile', { personId: item.id })}
-            >
-              {item.photo_url ? (
-                <Image source={{ uri: item.photo_url }} style={styles.avatar} />
-              ) : (
-                <View style={[styles.avatar, styles.avatarPlaceholder]}>
-                  <Ionicons name="person" size={20} color={colors.textMuted} />
-                </View>
-              )}
-              <View style={styles.rowText}>
-                <Text style={styles.rowName}>
-                  {item.first_name} {item.last_name}
-                </Text>
-                <Text style={styles.rowLocation}>
-                  {item.city}, {item.country}
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-            </Pressable>
-          )}
+          ListEmptyComponent={listEmptyComponent}
+          renderItem={renderPersonRow}
         />
       )}
     </SafeAreaView>
@@ -297,6 +355,19 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
     borderBottomWidth: 1,
     borderStyle: 'dashed',
     borderBottomColor: colors.border,
+  },
+
+  // Lepljiv (sticky) naslov sekcije celine – neprosojno ozadje, da prekrije vsebino pod sabo med scrollanjem.
+  sectionHeader: {
+    backgroundColor: colors.background,
+    paddingTop: 10,
+    paddingBottom: 8,
+  },
+  sectionHeaderText: {
+    fontFamily: FONT_SERIF_BOLD,
+    fontSize: 20,
+    letterSpacing: 1.5,
+    color: colors.textPrimary,
   },
 
   row: {

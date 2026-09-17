@@ -194,6 +194,7 @@ export const STRINGS = {
     sortAlpha: 'Alphabetical',
     sortMetDate: 'Meeting date',
     sortCountry: 'Country',
+    sortContinent: 'Continent',
     noFilterResults: 'No results for your search/filter.',
   },
 
