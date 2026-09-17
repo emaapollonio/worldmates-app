@@ -207,6 +207,7 @@ export const STRINGS = {
     subtitle: 'Enter a city or country you plan to visit.',
     searchPlaceholder: 'Where are you traveling? (city or country)',
     promptHint: 'Enter a city or country above to see who you already know there.',
+    countriesGridTitle: 'Or choose a country you already know',
     noMatches: "You don't know anyone there yet.",
     resultHeading: (destination: string, count: number, word: string) =>
       `You know ${count} ${word} in ${destination}`,

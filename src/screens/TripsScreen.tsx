@@ -1,17 +1,43 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { View, Text, Image, FlatList, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, Image, FlatList, ScrollView, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 
 import type { RootStackParamList } from '../navigation/types';
-import { listPeople, matchesLocation, type PeopleRow } from '../lib/people';
+import { listPeople, matchesLocation, computeCountryCounts, type PeopleRow } from '../lib/people';
+import { continentForCountry } from '../lib/continents';
 import type { AppColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
 import { FONT_SERIF_BOLD } from '../theme/typography';
 import { STRINGS } from '../constants/strings';
 import SearchBar from '../components/SearchBar';
+import ContinentIcon from '../components/ContinentIcon';
+
+type ContinentCountries = { continent: string; countries: string[] };
+
+/** Vse (unikatne) države, kjer uporabnik pozna vsaj eno osebo, združene po celini – za mrežo pilul na TripsScreen. */
+function groupCountriesByContinent(people: PeopleRow[]): ContinentCountries[] {
+  const byContinent = new Map<string, string[]>();
+  computeCountryCounts(people).forEach(({ country }) => {
+    const continent = continentForCountry(country);
+    const list = byContinent.get(continent);
+    if (list) list.push(country);
+    else byContinent.set(continent, [country]);
+  });
+
+  const continents = Array.from(byContinent.keys()).sort((a, b) => {
+    if (a === 'Other') return 1;
+    if (b === 'Other') return -1;
+    return a.localeCompare(b);
+  });
+
+  return continents.map((continent) => ({
+    continent,
+    countries: [...byContinent.get(continent)!].sort((a, b) => a.localeCompare(b, 'sl')),
+  }));
+}
 
 /** Slovensko sklanjanje "oseba" glede na število (1 oseba, 2 osebi, 3-4 osebe, 5+ oseb). */
 function personWord(n: number): string {
@@ -63,6 +89,7 @@ export default function TripsScreen() {
     () => (trimmedDestination ? people.filter((p) => matchesLocation(p, trimmedDestination)) : []),
     [people, trimmedDestination],
   );
+  const countriesByContinent = useMemo(() => groupCountriesByContinent(people), [people]);
 
   return (
     <SafeAreaView edges={['top']} style={styles.screen}>
@@ -84,10 +111,38 @@ export default function TripsScreen() {
           </Pressable>
         </View>
       ) : !trimmedDestination ? (
-        <View style={styles.centered}>
-          <Ionicons name="airplane-outline" size={40} color={colors.textMuted} />
-          <Text style={styles.hintText}>{STRINGS.trips.promptHint}</Text>
-        </View>
+        <ScrollView contentContainerStyle={styles.promptContent}>
+          <View style={styles.promptHero}>
+            <Ionicons name="airplane-outline" size={40} color={colors.textMuted} />
+            <Text style={styles.hintText}>{STRINGS.trips.promptHint}</Text>
+          </View>
+
+          {countriesByContinent.length > 0 ? (
+            <View style={styles.countriesSection}>
+              <Text style={styles.countriesGridTitle}>{STRINGS.trips.countriesGridTitle}</Text>
+              {countriesByContinent.map(({ continent, countries }) => (
+                <View key={continent} style={styles.continentGroup}>
+                  <View style={styles.continentLabelRow}>
+                    <ContinentIcon continent={continent} color={colors.primary} size={16} />
+                    <Text style={styles.continentLabel}>{continent.toUpperCase()}</Text>
+                  </View>
+                  <View style={styles.countryChipGrid}>
+                    {countries.map((country) => (
+                      <Pressable
+                        key={country}
+                        style={styles.countryChip}
+                        onPress={() => setDestination(country)}
+                        accessibilityRole="button"
+                      >
+                        <Text style={styles.countryChipText}>{country}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </View>
+              ))}
+            </View>
+          ) : null}
+        </ScrollView>
       ) : matches.length === 0 ? (
         <View style={styles.centered}>
           <Ionicons name="sad-outline" size={40} color={colors.textMuted} />
@@ -144,6 +199,37 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
   errorText: { fontSize: 14, color: colors.textSecondary, textAlign: 'center' },
   retryBtn: { backgroundColor: colors.primary, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 16 },
   retryBtnText: { color: colors.onPrimary, fontWeight: '600', fontSize: 13 },
+
+  promptContent: { padding: 24, paddingTop: 12, gap: 12 },
+  promptHero: { alignItems: 'center', justifyContent: 'center', gap: 12, paddingVertical: 12 },
+
+  countriesSection: { marginTop: 8, gap: 18 },
+  countriesGridTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  continentGroup: { gap: 8 },
+  continentLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  continentLabel: {
+    fontFamily: FONT_SERIF_BOLD,
+    fontSize: 14,
+    letterSpacing: 1,
+    color: colors.textPrimary,
+  },
+  countryChipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  countryChip: {
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  countryChipText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
 
   resultHeading: {
     marginTop: 16,
