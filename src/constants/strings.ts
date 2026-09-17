@@ -231,4 +231,16 @@ export const STRINGS = {
     logoutConfirmMessage: 'Are you sure you want to log out?',
     logoutErrorTitle: 'Error while logging out',
   },
+
+  /** Uvodni zasloni, prikazani samo ob prvem odprtju app (glej src/lib/onboarding.ts). */
+  onboarding: {
+    page1Title: 'Save every person you meet while traveling',
+    page1Description: 'Keep photos, contact info, and memories all in one place.',
+    page2Title: 'See them on your personal atlas',
+    page2Description: "Every person you've met appears as a pin on your own travel map.",
+    page3Title: 'Stay connected, wherever they are',
+    page3Description: 'Reach out anytime – from home or on the road.',
+    nextButton: 'Next',
+    getStartedButton: 'Get started',
+  },
 } as const;

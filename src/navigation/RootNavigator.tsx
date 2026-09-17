@@ -9,9 +9,11 @@ import { useTheme } from '../theme/ThemeContext';
 import { FONT_SERIF_BOLD } from '../theme/typography';
 import { supabase } from '../lib/supabase';
 import { ensureProfile } from '../lib/profiles';
+import { hasSeenOnboarding } from '../lib/onboarding';
 import { STRINGS } from '../constants/strings';
 import TabNavigator from './TabNavigator';
 import AuthScreen from '../screens/AuthScreen';
+import OnboardingScreen from '../screens/OnboardingScreen';
 import AddPersonScreen from '../screens/AddPersonScreen';
 import PersonProfileScreen from '../screens/PersonProfileScreen';
 
@@ -22,6 +24,11 @@ export default function RootNavigator() {
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [session, setSession] = useState<Session | null>(null);
   const [initializing, setInitializing] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    hasSeenOnboarding().then((seen) => setShowOnboarding(!seen));
+  }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -45,12 +52,16 @@ export default function RootNavigator() {
     ensureProfile(session.user.id).catch((e) => console.error('[RootNavigator] ensureProfile ni uspel:', e));
   }, [session?.user.id]);
 
-  if (initializing) {
+  if (initializing || showOnboarding === null) {
     return (
       <View style={styles.loading}>
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
+  }
+
+  if (showOnboarding) {
+    return <OnboardingScreen onDone={() => setShowOnboarding(false)} />;
   }
 
   return (
