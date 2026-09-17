@@ -6,6 +6,7 @@ import type { Session } from '@supabase/supabase-js';
 import type { RootStackParamList } from './types';
 import type { AppColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
+import { FONT_SERIF_BOLD } from '../theme/typography';
 import { supabase } from '../lib/supabase';
 import { STRINGS } from '../constants/strings';
 import TabNavigator from './TabNavigator';
@@ -49,7 +50,7 @@ export default function RootNavigator() {
       screenOptions={{
         headerStyle: { backgroundColor: colors.background },
         headerTintColor: colors.textPrimary,
-        headerTitleStyle: { fontWeight: '700' },
+        headerTitleStyle: { fontFamily: FONT_SERIF_BOLD },
         headerShadowVisible: false,
         contentStyle: { backgroundColor: colors.background },
       }}

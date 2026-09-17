@@ -10,6 +10,7 @@ import { listPeople, matchesQuery, matchesTags, collectUniqueTags, type PeopleRo
 import { getCachedPeople, setCachedPeople } from '../lib/offlineCache';
 import type { AppColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
+import { FONT_SERIF_BOLD } from '../theme/typography';
 import { STRINGS } from '../constants/strings';
 import SearchBar from '../components/SearchBar';
 import TagFilterRow from '../components/TagFilterRow';
@@ -187,7 +188,7 @@ export default function ListScreen() {
         <View style={styles.listContent}>
           {SKELETON_ROWS.map((i) => (
             <React.Fragment key={i}>
-              {i > 0 ? <View style={styles.separator} /> : null}
+              {i > 0 ? <View style={styles.dashedSeparator} /> : null}
               <SkeletonRow />
             </React.Fragment>
           ))}
@@ -204,7 +205,7 @@ export default function ListScreen() {
           data={visiblePeople}
           keyExtractor={(p) => p.id}
           contentContainerStyle={[styles.listContent, visiblePeople.length === 0 && styles.listContentEmpty]}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          ItemSeparatorComponent={() => <View style={styles.dashedSeparator} />}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary]} />
           }
@@ -288,7 +289,13 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
 
   listContent: { padding: 16, paddingTop: 8 },
   listContentEmpty: { flexGrow: 1 },
-  separator: { height: 10 },
+  dashedSeparator: {
+    height: 1,
+    marginVertical: 5,
+    borderBottomWidth: 1,
+    borderStyle: 'dashed',
+    borderBottomColor: colors.border,
+  },
 
   row: {
     flexDirection: 'row',
@@ -304,7 +311,7 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
   avatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: colors.surfaceMuted },
   avatarPlaceholder: { alignItems: 'center', justifyContent: 'center' },
   rowText: { flex: 1 },
-  rowName: { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
+  rowName: { fontFamily: FONT_SERIF_BOLD, fontSize: 16, color: colors.textPrimary },
   rowLocation: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
 
   skeletonBlock: { backgroundColor: colors.border },

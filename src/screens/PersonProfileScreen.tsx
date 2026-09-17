@@ -24,8 +24,9 @@ import * as Sharing from 'expo-sharing';
 import type { RootStackParamList } from '../navigation/types';
 import type { ContactType } from '../types/person';
 import { getPerson, deletePerson, type PeopleRow } from '../lib/people';
-import type { AppColors } from '../theme/colors';
+import { withAlpha, type AppColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
+import { FONT_SERIF_BOLD } from '../theme/typography';
 import { STRINGS } from '../constants/strings';
 import LoadingState from '../components/LoadingState';
 import MetStampBadge from '../components/MetStampBadge';
@@ -374,11 +375,11 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  name: { marginTop: 12, fontSize: 22, fontWeight: '700', color: colors.textPrimary },
+  name: { marginTop: 12, fontFamily: FONT_SERIF_BOLD, fontSize: 24, color: colors.textPrimary },
   locationRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 },
   location: { fontSize: 14, color: colors.textSecondary },
 
-  gallerySection: { marginTop: 18 },
+  gallerySection: { marginTop: 18, paddingTop: 14, borderTopWidth: 1, borderStyle: 'dashed', borderTopColor: colors.border },
   galleryList: { marginTop: 8, marginHorizontal: -20 },
   galleryRow: { gap: 10, paddingHorizontal: 20 },
   galleryThumb: { width: 72, height: 72, borderRadius: 14, backgroundColor: colors.surfaceMuted },
@@ -399,20 +400,21 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
 
   tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 18 },
   tag: {
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: withAlpha(colors.accent, 0.18),
+    borderWidth: 1,
+    borderColor: withAlpha(colors.accent, 0.4),
     borderRadius: 999,
-    paddingVertical: 5,
-    paddingHorizontal: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 13,
   },
-  tagText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary },
+  tagText: { fontSize: 12, fontWeight: '700', color: colors.accentDark },
 
   section: {
     marginTop: 18,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 14,
-    padding: 14,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderStyle: 'dashed',
+    borderTopColor: colors.border,
     gap: 6,
   },
   sectionTitle: {

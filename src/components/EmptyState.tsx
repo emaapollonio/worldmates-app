@@ -3,6 +3,7 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { AppColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
+import { FONT_SERIF_BOLD } from '../theme/typography';
 
 type Props = {
   title: string;
@@ -56,7 +57,7 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 16,
   },
-  title: { fontSize: 18, fontWeight: '700', color: colors.textPrimary, textAlign: 'center' },
+  title: { fontFamily: FONT_SERIF_BOLD, fontSize: 19, color: colors.textPrimary, textAlign: 'center' },
   subtitle: {
     fontSize: 14,
     color: colors.textSecondary,

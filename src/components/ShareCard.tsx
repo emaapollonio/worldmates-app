@@ -2,6 +2,7 @@ import React, { forwardRef } from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
+import { FONT_SERIF_BOLD } from '../theme/typography';
 import { STRINGS } from '../constants/strings';
 
 type Props = {
@@ -73,8 +74,8 @@ const styles = StyleSheet.create({
   photoPlaceholder: { alignItems: 'center', justifyContent: 'center' },
   name: {
     marginTop: 22,
-    fontSize: 28,
-    fontWeight: '700',
+    fontFamily: FONT_SERIF_BOLD,
+    fontSize: 30,
     color: colors.onPrimary,
     textAlign: 'center',
   },

@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import type { AppColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
+import { FONT_SERIF_BOLD } from '../theme/typography';
 import { STRINGS } from '../constants/strings';
 
 /**
@@ -142,7 +143,7 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 8,
   },
-  title: { textAlign: 'center', fontSize: 24, fontWeight: '700', color: colors.textPrimary },
+  title: { textAlign: 'center', fontFamily: FONT_SERIF_BOLD, fontSize: 26, color: colors.textPrimary },
   subtitle: { textAlign: 'center', fontSize: 14, color: colors.textSecondary, marginBottom: 20 },
 
   field: { marginBottom: 4 },

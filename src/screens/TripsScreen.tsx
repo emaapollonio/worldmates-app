@@ -9,6 +9,7 @@ import type { RootStackParamList } from '../navigation/types';
 import { listPeople, matchesLocation, type PeopleRow } from '../lib/people';
 import type { AppColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
+import { FONT_SERIF_BOLD } from '../theme/typography';
 import { STRINGS } from '../constants/strings';
 import SearchBar from '../components/SearchBar';
 
@@ -135,7 +136,7 @@ export default function TripsScreen() {
 const createStyles = (colors: AppColors) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
   topBar: { paddingHorizontal: 16, paddingTop: 12, gap: 10 },
-  title: { fontSize: 22, fontWeight: '700', color: colors.textPrimary },
+  title: { fontFamily: FONT_SERIF_BOLD, fontSize: 24, color: colors.textPrimary },
   subtitle: { fontSize: 13, color: colors.textSecondary, marginTop: -4 },
 
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 },
@@ -169,6 +170,6 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
   avatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: colors.surfaceMuted },
   avatarPlaceholder: { alignItems: 'center', justifyContent: 'center' },
   rowText: { flex: 1 },
-  rowName: { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
+  rowName: { fontFamily: FONT_SERIF_BOLD, fontSize: 16, color: colors.textPrimary },
   rowLocation: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
 });
