@@ -165,7 +165,13 @@ export default function ProfileScreen() {
       <Text style={styles.screenSubtitle}>{STRINGS.profile.subtitle}</Text>
 
       <View style={styles.avatarSection}>
-        <Pressable onPress={onChangeAvatar} disabled={uploadingAvatar} style={styles.avatarWrap}>
+        <Pressable
+          onPress={onChangeAvatar}
+          disabled={uploadingAvatar}
+          style={styles.avatarWrap}
+          accessibilityRole="button"
+          accessibilityLabel={STRINGS.profile.editAvatarAccessibilityLabel}
+        >
           {profile?.avatar_url ? (
             <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
           ) : (
@@ -177,29 +183,37 @@ export default function ProfileScreen() {
             {uploadingAvatar ? (
               <ActivityIndicator size="small" color={colors.onPrimary} />
             ) : (
-              <Ionicons
-                name="camera"
-                size={15}
-                color={colors.onPrimary}
-                accessibilityLabel={STRINGS.profile.editAvatarAccessibilityLabel}
-              />
+              <Ionicons name="camera" size={15} color={colors.onPrimary} />
             )}
           </View>
         </Pressable>
-        <Pressable onPress={() => setEditingField('display_name')}>
+        <Pressable
+          onPress={() => setEditingField('display_name')}
+          accessibilityRole="button"
+          accessibilityLabel={STRINGS.profile.editDisplayNameAccessibilityLabel}
+        >
           <View style={styles.displayNameRow}>
             {displayName ? <Text style={styles.displayName}>{displayName}</Text> : null}
             <Ionicons name="pencil" size={14} color={colors.textMuted} />
           </View>
         </Pressable>
 
-        <Pressable onPress={() => setEditingField('tagline')}>
+        <Pressable
+          onPress={() => setEditingField('tagline')}
+          accessibilityRole="button"
+          accessibilityLabel={STRINGS.profile.editTaglineAccessibilityLabel}
+        >
           <Text style={profile?.tagline ? styles.tagline : styles.taglinePlaceholder}>
             {profile?.tagline || STRINGS.profile.addTaglinePlaceholder}
           </Text>
         </Pressable>
 
-        <Pressable onPress={() => setEditingField('home_country')} style={styles.homeCountryRow}>
+        <Pressable
+          onPress={() => setEditingField('home_country')}
+          style={styles.homeCountryRow}
+          accessibilityRole="button"
+          accessibilityLabel={STRINGS.profile.editHomeCountryAccessibilityLabel}
+        >
           <Ionicons name="home-outline" size={14} color={colors.textSecondary} />
           <Text style={profile?.home_country ? styles.homeCountry : styles.taglinePlaceholder}>
             {profile?.home_country || STRINGS.profile.addHomeCountryPlaceholder}

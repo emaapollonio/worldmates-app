@@ -72,6 +72,10 @@ function PersonMarker({
       coordinate={coordinate}
       title={`${person.first_name} ${person.last_name}`}
       description={`${person.city}, ${person.country}`}
+      accessibilityLabel={STRINGS.map.pinAccessibilityLabel(
+        `${person.first_name} ${person.last_name}`,
+        `${person.city}, ${person.country}`,
+      )}
       onPress={handlePress}
       tracksViewChanges={tracksViewChanges}
     >
@@ -257,6 +261,10 @@ export default function MapScreen() {
               coordinate={coordinate}
               title={`${p.first_name} ${p.last_name}`}
               description={`${p.city}, ${p.country}`}
+              accessibilityLabel={STRINGS.map.pinAccessibilityLabel(
+                `${p.first_name} ${p.last_name}`,
+                `${p.city}, ${p.country}`,
+              )}
               onPress={() => goToProfile(p.id)}
             />
           );
@@ -288,6 +296,8 @@ export default function MapScreen() {
           <Pressable
             style={[styles.viewModeBtn, viewMode === 'lives' && styles.viewModeBtnActive]}
             onPress={() => setViewMode('lives')}
+            accessibilityRole="button"
+            accessibilityState={{ selected: viewMode === 'lives' }}
           >
             <Text style={[styles.viewModeText, viewMode === 'lives' && styles.viewModeTextActive]}>
               {STRINGS.map.livesOption}
@@ -296,6 +306,8 @@ export default function MapScreen() {
           <Pressable
             style={[styles.viewModeBtn, viewMode === 'met' && styles.viewModeBtnActive]}
             onPress={() => setViewMode('met')}
+            accessibilityRole="button"
+            accessibilityState={{ selected: viewMode === 'met' }}
           >
             <Text style={[styles.viewModeText, viewMode === 'met' && styles.viewModeTextActive]}>
               {STRINGS.map.metOption}

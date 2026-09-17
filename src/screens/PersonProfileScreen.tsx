@@ -293,7 +293,11 @@ export default function PersonProfileScreen() {
             contentContainerStyle={styles.galleryRow}
             style={styles.galleryList}
             renderItem={({ item, index }) => (
-              <Pressable onPress={() => setViewerIndex(index)}>
+              <Pressable
+                onPress={() => setViewerIndex(index)}
+                accessibilityRole="button"
+                accessibilityLabel={STRINGS.personProfile.viewPhotoAccessibilityLabel(index + 1)}
+              >
                 <Image source={{ uri: item }} style={styles.galleryThumb} />
               </Pressable>
             )}

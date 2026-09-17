@@ -177,6 +177,8 @@ export default function ListScreen() {
               key={opt.key}
               onPress={() => setSortKey(opt.key)}
               style={[styles.sortChip, active && styles.sortChipActive]}
+              accessibilityRole="button"
+              accessibilityState={{ selected: active }}
             >
               <Text style={[styles.sortChipText, active && styles.sortChipTextActive]}>{opt.label}</Text>
             </Pressable>

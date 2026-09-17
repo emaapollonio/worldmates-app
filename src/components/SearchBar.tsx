@@ -41,7 +41,12 @@ export default function SearchBar({
         returnKeyType="search"
       />
       {value.length > 0 ? (
-        <Pressable onPress={() => onChangeText('')} hitSlop={8}>
+        <Pressable
+          onPress={() => onChangeText('')}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={STRINGS.searchBar.clearAccessibilityLabel}
+        >
           <Ionicons name="close-circle" size={18} color={colors.textMuted} />
         </Pressable>
       ) : null}

@@ -34,6 +34,8 @@ export default function TagFilterRow({ tags, selected, onToggle, containerStyle 
             key={tag}
             onPress={() => onToggle(tag)}
             style={[styles.chip, active && styles.chipActive]}
+            accessibilityRole="button"
+            accessibilityState={{ selected: active }}
           >
             <Text style={[styles.chipText, active && styles.chipTextActive]}>{tag}</Text>
           </Pressable>

@@ -414,7 +414,12 @@ export default function AddPersonScreen() {
 
         {/* Fotografija + ime/priimek */}
         <View style={styles.photoRow}>
-          <Pressable style={styles.photo} onPress={onPhotoPress}>
+          <Pressable
+            style={styles.photo}
+            onPress={onPhotoPress}
+            accessibilityRole="button"
+            accessibilityLabel={STRINGS.addPerson.photoPickerAccessibilityLabel}
+          >
             {photoUris[0] ? (
               <Image source={{ uri: photoUris[0] }} style={styles.photoImg} />
             ) : (
@@ -496,6 +501,8 @@ export default function AddPersonScreen() {
                 key={opt.type}
                 onPress={() => setContactType(opt.type)}
                 style={[styles.contactChip, active && styles.contactChipActive]}
+                accessibilityRole="button"
+                accessibilityState={{ selected: active }}
               >
                 <Ionicons
                   name={opt.icon}
@@ -526,12 +533,22 @@ export default function AddPersonScreen() {
           {photoUris.slice(1).map((uri) => (
             <View key={uri} style={styles.galleryThumbWrap}>
               <Image source={{ uri }} style={styles.galleryThumb} />
-              <Pressable style={styles.galleryRemoveBadge} onPress={() => removePhoto(uri)}>
+              <Pressable
+                style={styles.galleryRemoveBadge}
+                onPress={() => removePhoto(uri)}
+                accessibilityRole="button"
+                accessibilityLabel={STRINGS.addPerson.removePhotoAccessibilityLabel}
+              >
                 <Ionicons name="close" size={12} color={colors.onPrimary} />
               </Pressable>
             </View>
           ))}
-          <Pressable style={styles.addTile} onPress={onPhotoPress}>
+          <Pressable
+            style={styles.addTile}
+            onPress={onPhotoPress}
+            accessibilityRole="button"
+            accessibilityLabel={STRINGS.addPerson.addPhotoAccessibilityLabel}
+          >
             <Ionicons name="add" size={22} color={colors.textMuted} />
           </Pressable>
         </ScrollView>
@@ -544,7 +561,12 @@ export default function AddPersonScreen() {
             {tags.map((tag) => (
               <View key={tag} style={styles.tagChip}>
                 <Text style={styles.tagChipText}>{tag}</Text>
-                <Pressable onPress={() => removeTag(tag)} hitSlop={6}>
+                <Pressable
+                  onPress={() => removeTag(tag)}
+                  hitSlop={6}
+                  accessibilityRole="button"
+                  accessibilityLabel={STRINGS.addPerson.removeTagAccessibilityLabel(tag)}
+                >
                   <Ionicons name="close" size={13} color={colors.onPrimary} />
                 </Pressable>
               </View>

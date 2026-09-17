@@ -61,7 +61,9 @@ export const lightColors: AppColors = {
   // Besedilo
   textPrimary: palette.ink,
   textSecondary: '#6B5A46',
-  textMuted: '#9C8B76',
+  // Prvotni #9C8B76 je na kremni podlagi dosegel samo ~2.7:1 (pod WCAG AA
+  // 4.5:1 za navadno besedilo) – potemnjen na ~4.1:1, glej PR "Accessibility improvements".
+  textMuted: '#7D6C56',
 
   // Ostalo
   border: palette.sand,

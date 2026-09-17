@@ -54,6 +54,7 @@ export const STRINGS = {
 
   searchBar: {
     placeholder: 'Search by name, city or country …',
+    clearAccessibilityLabel: 'Clear search',
   },
 
   /** Skupno za MapScreen in ListScreen, ko oseb sploh (še) ni. */
@@ -113,6 +114,9 @@ export const STRINGS = {
     contactSectionTitle: 'Contact platform',
     photosSectionTitle: 'Photos',
     photosHint: 'The first photo added is the profile picture; add shared memory photos here.',
+    photoPickerAccessibilityLabel: 'Add or change profile photo',
+    addPhotoAccessibilityLabel: 'Add photo',
+    removePhotoAccessibilityLabel: 'Remove photo',
     photoActionSheetTitle: "Friend's photos",
     photoActionSheetMessage: 'Choose a source (you can select multiple in the gallery)',
     cameraOption: 'Camera',
@@ -124,6 +128,7 @@ export const STRINGS = {
     photoLoadErrorMessage: 'Could not load the photo.',
     tagsSectionTitle: 'Tags',
     tagsPlaceholder: 'e.g. hostel, travel buddy (Enter or comma adds a tag)',
+    removeTagAccessibilityLabel: (tag: string) => `Remove tag ${tag}`,
     noteSectionTitle: 'Notes',
     notePlaceholder: 'Where you met, what you did together, recommendations ...',
     missingFieldsTitle: 'Missing information',
@@ -163,6 +168,7 @@ export const STRINGS = {
     writeButtonNoContact: 'No contact saved',
     noteSectionTitle: 'Notes',
     gallerySectionTitle: 'Photo gallery',
+    viewPhotoAccessibilityLabel: (index: number) => `View photo ${index}`,
     deleteConfirmTitle: 'Delete person',
     deleteConfirmMessage: (name: string) => `Are you sure you want to delete ${name}? This cannot be undone.`,
     deleteErrorTitle: 'Error while deleting',
@@ -174,6 +180,7 @@ export const STRINGS = {
 
   map: {
     refreshAccessibilityLabel: 'Refresh pins',
+    pinAccessibilityLabel: (name: string, place: string) => `${name}, ${place}`,
     livesOption: 'Where they live',
     metOption: 'Where we met',
     loadErrorTitle: 'Error while loading',
@@ -213,12 +220,15 @@ export const STRINGS = {
     avatarUploadErrorMessage: 'Could not update your profile picture.',
     avatarUpdatedToast: 'Profile picture updated',
     editDisplayNameTitle: 'Display name',
+    editDisplayNameAccessibilityLabel: 'Edit display name',
     displayNamePlaceholder: 'Your name',
     addTaglinePlaceholder: 'Add a tagline',
     editTaglineTitle: 'Tagline',
+    editTaglineAccessibilityLabel: 'Edit tagline',
     taglinePlaceholder: 'e.g. "Digital nomad since 2022"',
     addHomeCountryPlaceholder: 'Add home country',
     editHomeCountryTitle: 'Home country',
+    editHomeCountryAccessibilityLabel: 'Edit home country',
     homeCountryPlaceholder: 'e.g. Slovenia',
     saveErrorMessage: 'Could not save your changes.',
     statsTitle: 'Statistics',
