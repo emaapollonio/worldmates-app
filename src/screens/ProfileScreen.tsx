@@ -11,6 +11,7 @@ import { listPeople, computeStats, computeCountryCounts, type PeopleRow } from '
 import { getProfile, updateProfile, type EditableProfileFields, type ProfileRow } from '../lib/profiles';
 import { uploadAvatar } from '../lib/storage';
 import { isBiometricAvailable, isBiometricLoginEnabled, setBiometricLoginEnabled } from '../lib/biometrics';
+import { svgCountryName } from '../lib/continents';
 import type { AppColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
 import { FONT_SERIF_BOLD } from '../theme/typography';
@@ -18,6 +19,7 @@ import { STRINGS } from '../constants/strings';
 import EditFieldModal from '../components/EditFieldModal';
 import MetStampBadge from '../components/MetStampBadge';
 import SettingsRow from '../components/SettingsRow';
+import WorldMapHighlight from '../components/WorldMapHighlight';
 
 type EditableField = 'display_name' | 'tagline' | 'home_country';
 
@@ -109,6 +111,10 @@ export default function ProfileScreen() {
 
   const stats = useMemo(() => computeStats(people), [people]);
   const countryCounts = useMemo(() => computeCountryCounts(people), [people]);
+  const knownCountryNames = useMemo(() => {
+    const names = countryCounts.map(({ country }) => svgCountryName(country)).filter((n): n is string => !!n);
+    return new Set(names);
+  }, [countryCounts]);
   const emailPrefix = userEmail?.split('@')[0] ?? '';
   const displayName = profile?.display_name?.trim() || emailPrefix;
 
@@ -253,11 +259,14 @@ export default function ProfileScreen() {
         {!loadingStats && countryCounts.length === 0 ? (
           <Text style={styles.stampsEmpty}>{STRINGS.profile.stampsEmpty}</Text>
         ) : (
-          <View style={styles.stampsGrid}>
-            {countryCounts.map(({ country, count }) => (
-              <MetStampBadge key={country} primary={country} secondary={STRINGS.profile.stampCount(count)} size={72} />
-            ))}
-          </View>
+          <>
+            <WorldMapHighlight knownCountryNames={knownCountryNames} />
+            <View style={styles.stampsGrid}>
+              {countryCounts.map(({ country, count }) => (
+                <MetStampBadge key={country} primary={country} secondary={STRINGS.profile.stampCount(count)} size={72} />
+              ))}
+            </View>
+          </>
         )}
       </View>
 
@@ -379,7 +388,7 @@ const createStyles = (colors: AppColors) =>
       lineHeight: 18,
       paddingHorizontal: 12,
     },
-    stampsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12 },
+    stampsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12, marginTop: 16 },
 
     statCard: {
       flex: 1,

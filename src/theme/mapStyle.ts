@@ -1,5 +1,8 @@
 import type { MapStyleElement } from 'react-native-maps';
 
+/** Mehka modro-zelena "voda" – deljena med to (Google Maps) in WorldMapHighlight (SVG) karto. */
+export const VINTAGE_WATER_COLOR = '#A9C9C2';
+
 /**
  * Retro/vintage papirnat zemljevid (Google Maps JSON style), usklajen z
  * "vintage travel stamp" barvno paleto (glej src/theme/colors.ts). Velja
@@ -36,6 +39,6 @@ export const VINTAGE_MAP_STYLE: MapStyleElement[] = [
     stylers: [{ color: '#3A2E1F' }],
   },
 
-  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#A9C9C2' }] },
+  { featureType: 'water', elementType: 'geometry', stylers: [{ color: VINTAGE_WATER_COLOR }] },
   { featureType: 'water', elementType: 'labels', stylers: [{ visibility: 'off' }] },
 ];
