@@ -78,6 +78,13 @@ export const STRINGS = {
     signUpFailedTitle: 'Sign up failed',
     confirmEmailTitle: 'Check your email',
     confirmEmailMessage: 'We sent you a confirmation link. Once you confirm your email, you can log in.',
+    forgotPasswordLink: 'Forgot password?',
+    resetPasswordTitle: 'Reset password',
+    resetPasswordDescription: "Enter your email and we'll send you a link to reset your password.",
+    resetPasswordSendButton: 'Send reset link',
+    resetPasswordFailedTitle: 'Could not send reset email',
+    resetPasswordSentTitle: 'Check your email',
+    resetPasswordSentMessage: 'Check your email for instructions.',
   },
 
   addPerson: {

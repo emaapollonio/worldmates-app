@@ -18,6 +18,7 @@ import type { AppColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
 import { FONT_SERIF_BOLD } from '../theme/typography';
 import { STRINGS } from '../constants/strings';
+import ForgotPasswordModal from '../components/ForgotPasswordModal';
 
 /**
  * Prijava / registracija. Ob uspehu ne navigiramo ročno – RootNavigator
@@ -29,6 +30,7 @@ export default function AuthScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [forgotPasswordVisible, setForgotPasswordVisible] = useState(false);
 
   const validate = () => {
     if (!email.trim() || !password) {
@@ -124,7 +126,17 @@ export default function AuthScreen() {
         >
           <Text style={styles.secondaryBtnText}>{STRINGS.auth.signUpButton}</Text>
         </Pressable>
+
+        <Pressable style={styles.forgotPasswordLink} onPress={() => setForgotPasswordVisible(true)} disabled={loading}>
+          <Text style={styles.forgotPasswordLinkText}>{STRINGS.auth.forgotPasswordLink}</Text>
+        </Pressable>
       </ScrollView>
+
+      <ForgotPasswordModal
+        visible={forgotPasswordVisible}
+        initialEmail={email}
+        onClose={() => setForgotPasswordVisible(false)}
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -182,6 +194,9 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
   },
   secondaryBtnPressed: { opacity: 0.7 },
   secondaryBtnText: { color: colors.textPrimary, fontSize: 15, fontWeight: '600' },
+
+  forgotPasswordLink: { marginTop: 12, alignItems: 'center' },
+  forgotPasswordLinkText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
 
   btnDisabled: { opacity: 0.7 },
 });
