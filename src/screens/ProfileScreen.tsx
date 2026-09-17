@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, Image, Alert, ActivityIndicator, Pressable, ScrollView, Switch, StyleSheet } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,6 +10,7 @@ import { supabase } from '../lib/supabase';
 import { listPeople, computeStats, computeCountryCounts, type PeopleRow } from '../lib/people';
 import { getProfile, updateProfile, type EditableProfileFields, type ProfileRow } from '../lib/profiles';
 import { uploadAvatar } from '../lib/storage';
+import { isBiometricAvailable, isBiometricLoginEnabled, setBiometricLoginEnabled } from '../lib/biometrics';
 import type { AppColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
 import { FONT_SERIF_BOLD } from '../theme/typography';
@@ -47,6 +48,18 @@ export default function ProfileScreen() {
   const [loadingStats, setLoadingStats] = useState(true);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [editingField, setEditingField] = useState<EditableField | null>(null);
+  const [biometricSupported, setBiometricSupported] = useState(false);
+  const [biometricEnabled, setBiometricEnabled] = useState(false);
+
+  useEffect(() => {
+    isBiometricAvailable().then(setBiometricSupported);
+    isBiometricLoginEnabled().then(setBiometricEnabled);
+  }, []);
+
+  const onToggleBiometric = async (value: boolean) => {
+    setBiometricEnabled(value);
+    await setBiometricLoginEnabled(value);
+  };
 
   // Naloži ob vsakem fokusu, da profil/statistika po urejanju ostaneta sveža.
   useFocusEffect(
@@ -236,6 +249,21 @@ export default function ProfileScreen() {
               />
             }
           />
+          {biometricSupported ? (
+            <SettingsRow
+              icon="finger-print-outline"
+              label={STRINGS.profile.biometricLabel}
+              onPress={() => onToggleBiometric(!biometricEnabled)}
+              right={
+                <Switch
+                  value={biometricEnabled}
+                  onValueChange={onToggleBiometric}
+                  trackColor={{ false: colors.border, true: colors.primary }}
+                  thumbColor={colors.onPrimary}
+                />
+              }
+            />
+          ) : null}
           <SettingsRow
             icon="information-circle-outline"
             label={STRINGS.profile.aboutLabel}

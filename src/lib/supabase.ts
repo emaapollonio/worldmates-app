@@ -1,12 +1,13 @@
 import 'react-native-url-polyfill/auto';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
+import { largeSecureStore } from './secureStorage';
 
 /**
  * Supabase klient za MetMap.
  * URL in anon ključ prideta iz .env (EXPO_PUBLIC_* → Expo ju vgradi ob buildu).
- * Seja (prijava) se shrani v AsyncStorage, da uporabnika ob ponovnem
- * zagonu ni treba znova prijavljati.
+ * Seja (prijava) se shrani prek largeSecureStore (AES-šifrirana v AsyncStorage,
+ * šifrirni ključ v SecureStore/Keychain) namesto navadnega AsyncStorage, da
+ * uporabnika ob ponovnem zagonu ni treba znova prijavljati.
  */
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
@@ -20,7 +21,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    storage: AsyncStorage,
+    storage: largeSecureStore,
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: false,

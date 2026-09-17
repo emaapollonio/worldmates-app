@@ -42,7 +42,14 @@
         }
       ],
       "expo-sharing",
-      "expo-font"
+      "expo-font",
+      "expo-secure-store",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "MetMap uses Face ID to unlock the app for you."
+        }
+      ]
     ],
     "extra": {
       "eas": {

@@ -85,6 +85,12 @@ export const STRINGS = {
     resetPasswordFailedTitle: 'Could not send reset email',
     resetPasswordSentTitle: 'Check your email',
     resetPasswordSentMessage: 'Check your email for instructions.',
+    biometricPromptMessage: 'Log in to MetMap',
+    biometricLockTitle: 'Welcome back',
+    biometricLockDescription: 'Confirm with Face ID or your fingerprint to continue.',
+    biometricUnlockButton: 'Unlock',
+    biometricFailedMessage: 'Biometric authentication failed. Please try again.',
+    biometricLogoutInstead: 'Log out instead',
   },
 
   addPerson: {
@@ -224,6 +230,7 @@ export const STRINGS = {
     stampCount: (count: number) => `×${count}`,
     settingsTitle: 'Settings',
     darkModeLabel: 'Dark mode',
+    biometricLabel: 'Unlock with Face ID / fingerprint',
     aboutLabel: 'About',
     aboutVersion: (version: string) => `Version ${version}`,
     logoutButton: 'Log out',

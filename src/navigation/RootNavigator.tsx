@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { Session } from '@supabase/supabase-js';
@@ -10,10 +10,12 @@ import { FONT_SERIF_BOLD } from '../theme/typography';
 import { supabase } from '../lib/supabase';
 import { ensureProfile } from '../lib/profiles';
 import { hasSeenOnboarding } from '../lib/onboarding';
+import { isBiometricLoginEnabled } from '../lib/biometrics';
 import { STRINGS } from '../constants/strings';
 import TabNavigator from './TabNavigator';
 import AuthScreen from '../screens/AuthScreen';
 import OnboardingScreen from '../screens/OnboardingScreen';
+import BiometricLockScreen from '../screens/BiometricLockScreen';
 import AddPersonScreen from '../screens/AddPersonScreen';
 import PersonProfileScreen from '../screens/PersonProfileScreen';
 
@@ -25,10 +27,25 @@ export default function RootNavigator() {
   const [session, setSession] = useState<Session | null>(null);
   const [initializing, setInitializing] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
+  const [biometricGate, setBiometricGate] = useState<'checking' | 'locked' | 'unlocked'>('checking');
+  const biometricCheckedRef = useRef(false);
 
   useEffect(() => {
     hasSeenOnboarding().then((seen) => setShowOnboarding(!seen));
   }, []);
+
+  // Preveri biometrično zaklepanje samo enkrat na zagon app (ne ob vsaki
+  // osvežitvi žetona) – če takrat ni bilo seje, se app nikoli več ne zaklene
+  // znotraj istega procesa (uporabnik se je pravkar prijavil z geslom).
+  useEffect(() => {
+    if (initializing || biometricCheckedRef.current) return;
+    biometricCheckedRef.current = true;
+    if (!session) {
+      setBiometricGate('unlocked');
+      return;
+    }
+    isBiometricLoginEnabled().then((enabled) => setBiometricGate(enabled ? 'locked' : 'unlocked'));
+  }, [initializing, session]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -52,7 +69,7 @@ export default function RootNavigator() {
     ensureProfile(session.user.id).catch((e) => console.error('[RootNavigator] ensureProfile ni uspel:', e));
   }, [session?.user.id]);
 
-  if (initializing || showOnboarding === null) {
+  if (initializing || showOnboarding === null || biometricGate === 'checking') {
     return (
       <View style={styles.loading}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -62,6 +79,14 @@ export default function RootNavigator() {
 
   if (showOnboarding) {
     return <OnboardingScreen onDone={() => setShowOnboarding(false)} />;
+  }
+
+  // `session &&` (ne samo gate === 'locked') zagotovi, da po odjavi z zaklenjenega
+  // zaslona takoj pademo skozi na AuthScreen, čeprav se biometricGate ne ponastavi.
+  if (session && biometricGate === 'locked') {
+    return (
+      <BiometricLockScreen onUnlocked={() => setBiometricGate('unlocked')} onLogout={() => supabase.auth.signOut()} />
+    );
   }
 
   return (
