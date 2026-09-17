@@ -17,6 +17,7 @@ import SearchBar from '../components/SearchBar';
 import TagFilterRow from '../components/TagFilterRow';
 import EmptyState from '../components/EmptyState';
 import OfflineBanner from '../components/OfflineBanner';
+import ContinentIcon from '../components/ContinentIcon';
 
 type SortKey = 'alpha' | 'metDate' | 'country' | 'continent';
 
@@ -291,6 +292,7 @@ export default function ListScreen() {
           ListEmptyComponent={listEmptyComponent}
           renderSectionHeader={({ section }) => (
             <View style={styles.sectionHeader}>
+              <ContinentIcon continent={section.title} color={colors.primary} size={22} />
               <Text style={styles.sectionHeaderText}>{section.title.toUpperCase()}</Text>
             </View>
           )}
@@ -359,6 +361,9 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
 
   // Lepljiv (sticky) naslov sekcije celine – neprosojno ozadje, da prekrije vsebino pod sabo med scrollanjem.
   sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     backgroundColor: colors.background,
     paddingTop: 10,
     paddingBottom: 8,
