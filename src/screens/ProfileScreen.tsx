@@ -7,12 +7,21 @@ import Toast from 'react-native-toast-message';
 
 import { supabase } from '../lib/supabase';
 import { listPeople, computeStats, type PeopleRow } from '../lib/people';
-import { getProfile, updateProfile, type ProfileRow } from '../lib/profiles';
+import { getProfile, updateProfile, type EditableProfileFields, type ProfileRow } from '../lib/profiles';
 import { uploadAvatar } from '../lib/storage';
 import type { AppColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
 import { FONT_SERIF_BOLD } from '../theme/typography';
 import { STRINGS } from '../constants/strings';
+import EditFieldModal from '../components/EditFieldModal';
+
+type EditableField = 'display_name' | 'tagline' | 'home_country';
+
+const FIELD_CONFIG: Record<EditableField, { title: string; placeholder: string }> = {
+  display_name: { title: STRINGS.profile.editDisplayNameTitle, placeholder: STRINGS.profile.displayNamePlaceholder },
+  tagline: { title: STRINGS.profile.editTaglineTitle, placeholder: STRINGS.profile.taglinePlaceholder },
+  home_country: { title: STRINGS.profile.editHomeCountryTitle, placeholder: STRINGS.profile.homeCountryPlaceholder },
+};
 
 function StatCard({ value, label }: { value: number; label: string }) {
   const { colors } = useTheme();
@@ -34,6 +43,7 @@ export default function ProfileScreen() {
   const [people, setPeople] = useState<PeopleRow[]>([]);
   const [loadingStats, setLoadingStats] = useState(true);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [editingField, setEditingField] = useState<EditableField | null>(null);
 
   // Naloži ob vsakem fokusu, da profil/statistika po urejanju ostaneta sveža.
   useFocusEffect(
@@ -100,6 +110,20 @@ export default function ProfileScreen() {
     }
   };
 
+  const onSaveField = async (value: string) => {
+    if (!userId || !editingField) return;
+    const field = editingField;
+    setEditingField(null);
+    try {
+      const fields: EditableProfileFields = { [field]: value || null };
+      const updated = await updateProfile(userId, fields);
+      setProfile(updated);
+    } catch (e) {
+      console.error('[Profile] posodobitev profila ni uspela:', e);
+      Alert.alert(STRINGS.common.error, STRINGS.profile.saveErrorMessage);
+    }
+  };
+
   const onLogout = () => {
     Alert.alert(STRINGS.profile.logoutConfirmTitle, STRINGS.profile.logoutConfirmMessage, [
       { text: STRINGS.common.cancel, style: 'cancel' },
@@ -145,7 +169,25 @@ export default function ProfileScreen() {
             )}
           </View>
         </Pressable>
-        {displayName ? <Text style={styles.displayName}>{displayName}</Text> : null}
+        <Pressable onPress={() => setEditingField('display_name')}>
+          <View style={styles.displayNameRow}>
+            {displayName ? <Text style={styles.displayName}>{displayName}</Text> : null}
+            <Ionicons name="pencil" size={14} color={colors.textMuted} />
+          </View>
+        </Pressable>
+
+        <Pressable onPress={() => setEditingField('tagline')}>
+          <Text style={profile?.tagline ? styles.tagline : styles.taglinePlaceholder}>
+            {profile?.tagline || STRINGS.profile.addTaglinePlaceholder}
+          </Text>
+        </Pressable>
+
+        <Pressable onPress={() => setEditingField('home_country')} style={styles.homeCountryRow}>
+          <Ionicons name="home-outline" size={14} color={colors.textSecondary} />
+          <Text style={profile?.home_country ? styles.homeCountry : styles.taglinePlaceholder}>
+            {profile?.home_country || STRINGS.profile.addHomeCountryPlaceholder}
+          </Text>
+        </Pressable>
       </View>
 
       <View style={styles.statsSection}>
@@ -164,6 +206,15 @@ export default function ProfileScreen() {
       <Pressable style={({ pressed }) => [styles.logoutBtn, pressed && styles.logoutBtnPressed]} onPress={onLogout}>
         <Text style={styles.logoutBtnText}>{STRINGS.profile.logoutButton}</Text>
       </Pressable>
+
+      <EditFieldModal
+        visible={editingField !== null}
+        title={editingField ? FIELD_CONFIG[editingField].title : ''}
+        placeholder={editingField ? FIELD_CONFIG[editingField].placeholder : ''}
+        value={editingField ? (profile?.[editingField] ?? '') : ''}
+        onCancel={() => setEditingField(null)}
+        onSave={onSaveField}
+      />
     </ScrollView>
   );
 }
@@ -204,7 +255,12 @@ const createStyles = (colors: AppColors) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    displayName: { marginTop: 12, fontFamily: FONT_SERIF_BOLD, fontSize: 19, color: colors.textPrimary },
+    displayNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12 },
+    displayName: { fontFamily: FONT_SERIF_BOLD, fontSize: 19, color: colors.textPrimary },
+    tagline: { marginTop: 4, fontSize: 13, fontStyle: 'italic', color: colors.textSecondary, textAlign: 'center' },
+    taglinePlaceholder: { marginTop: 4, fontSize: 13, color: colors.textMuted, textAlign: 'center' },
+    homeCountryRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 8 },
+    homeCountry: { fontSize: 13, color: colors.textSecondary },
 
     statsSection: { alignSelf: 'stretch', marginTop: 28 },
     statsTitle: {
