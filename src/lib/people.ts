@@ -139,6 +139,19 @@ export function collectUniqueTags(people: PeopleRow[]): string[] {
 }
 
 /**
+ * Vsi unikatni tagi, ki jih je (trenutni, prek RLS) uporabnik kadarkoli
+ * uporabil na kateri koli osebi – za predloge ob dodajanju/urejanju osebe
+ * (glej AddPersonScreen). Naloži samo stolpec `tags`, ne celih vrstic.
+ */
+export async function listAllTags(): Promise<string[]> {
+  const { data, error } = await supabase.from('people').select('tags');
+  if (error) throw error;
+  const set = new Set<string>();
+  (data ?? []).forEach((row) => (row.tags as string[] | null)?.forEach((tag) => set.add(tag)));
+  return Array.from(set).sort((a, b) => a.localeCompare(b, 'sl'));
+}
+
+/**
  * Ali oseba živi v kraju/državi, ki ustreza iskalnemu nizu (case-insensitive, "vsebuje").
  * Za razliko od matchesQuery NE preverja imena – uporablja se za "Potovanja".
  */

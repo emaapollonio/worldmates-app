@@ -128,6 +128,7 @@ export const STRINGS = {
     photoLoadErrorMessage: 'Could not load the photo.',
     tagsSectionTitle: 'Tags',
     tagsPlaceholder: 'e.g. hostel, travel buddy (Enter or comma adds a tag)',
+    addSuggestedTagAccessibilityLabel: (tag: string) => `Add tag ${tag}`,
     removeTagAccessibilityLabel: (tag: string) => `Remove tag ${tag}`,
     noteSectionTitle: 'Notes',
     notePlaceholder: 'Where you met, what you did together, recommendations ...',

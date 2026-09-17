@@ -23,7 +23,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import type { ContactType, PersonDraft } from '../types/person';
 import type { RootStackParamList } from '../navigation/types';
-import { insertPerson, updatePerson, getPerson, type EditablePersonFields } from '../lib/people';
+import { insertPerson, updatePerson, getPerson, listAllTags, type EditablePersonFields } from '../lib/people';
 import { uploadPersonPhotos } from '../lib/storage';
 import { geocodeLocation } from '../lib/geocoding';
 import { isNetworkError } from '../lib/network';
@@ -105,6 +105,7 @@ export default function AddPersonScreen() {
   const [metLocation, setMetLocation] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
+  const [suggestedTags, setSuggestedTags] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [savePhase, setSavePhase] = useState<'idle' | 'geocoding' | 'uploading' | 'saving'>('idle');
   const [loadingExisting, setLoadingExisting] = useState(isEditing);
@@ -147,6 +148,19 @@ export default function AddPersonScreen() {
       cancelled = true;
     };
   }, [personId]);
+
+  // Predlogi tagov (za chipe nad vnosnim poljem) – vsi tagi, ki jih je uporabnik kadarkoli že uporabil.
+  useEffect(() => {
+    let cancelled = false;
+    listAllTags()
+      .then((allTags) => {
+        if (!cancelled) setSuggestedTags(allTags);
+      })
+      .catch((e) => console.error('[AddPerson] nalaganje predlogov tagov ni uspelo:', e));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const activeContact = useMemo(
     () => CONTACT_OPTIONS.find((o) => o.type === contactType) ?? CONTACT_OPTIONS[0],
@@ -556,6 +570,36 @@ export default function AddPersonScreen() {
 
         {/* Tagi */}
         <Text style={styles.sectionTitle}>{STRINGS.addPerson.tagsSectionTitle}</Text>
+        {suggestedTags.filter((t) => !tags.includes(t)).length > 0 ? (
+          <View style={styles.tagRow}>
+            {suggestedTags
+              .filter((t) => !tags.includes(t))
+              .map((tag) => (
+                <Pressable
+                  key={tag}
+                  style={styles.suggestedTagChip}
+                  onPress={() => addTag(tag)}
+                  accessibilityRole="button"
+                  accessibilityLabel={STRINGS.addPerson.addSuggestedTagAccessibilityLabel(tag)}
+                >
+                  <Ionicons name="add" size={12} color={colors.textSecondary} />
+                  <Text style={styles.suggestedTagChipText}>{tag}</Text>
+                </Pressable>
+              ))}
+          </View>
+        ) : null}
+        <TextInput
+          style={styles.input}
+          value={tagInput}
+          onChangeText={onTagInputChange}
+          onSubmitEditing={onTagSubmit}
+          placeholder={STRINGS.addPerson.tagsPlaceholder}
+          placeholderTextColor={colors.textMuted}
+          autoCapitalize="none"
+          autoCorrect={false}
+          returnKeyType="done"
+          blurOnSubmit={false}
+        />
         {tags.length > 0 ? (
           <View style={styles.tagRow}>
             {tags.map((tag) => (
@@ -573,18 +617,6 @@ export default function AddPersonScreen() {
             ))}
           </View>
         ) : null}
-        <TextInput
-          style={styles.input}
-          value={tagInput}
-          onChangeText={onTagInputChange}
-          onSubmitEditing={onTagSubmit}
-          placeholder={STRINGS.addPerson.tagsPlaceholder}
-          placeholderTextColor={colors.textMuted}
-          autoCapitalize="none"
-          autoCorrect={false}
-          returnKeyType="done"
-          blurOnSubmit={false}
-        />
 
         {/* Beležka */}
         <Text style={styles.sectionTitle}>{STRINGS.addPerson.noteSectionTitle}</Text>
@@ -774,6 +806,19 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
     backgroundColor: colors.accent,
   },
   tagChipText: { fontSize: 12, fontWeight: '600', color: colors.onPrimary },
+  // Predlagan (še ne izbran) tag – obrobljen/prazen, v nasprotju z izpolnjenim tagChip zgoraj.
+  suggestedTagChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  suggestedTagChipText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary },
 
   saveBtn: {
     marginTop: 28,
