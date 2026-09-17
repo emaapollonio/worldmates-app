@@ -28,10 +28,11 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: 'continent', label: STRINGS.list.sortContinent },
 ];
 
-type ContinentSection = { title: string; data: PeopleRow[] };
+type PeopleSection = { title: string; data: PeopleRow[] };
+type MetDateDirection = 'newest' | 'oldest';
 
 /** Skupine po celini (glej continentForCountry), znotraj vsake abecedno po imenu. "Other" vedno zadnji. */
-function groupByContinent(people: PeopleRow[]): ContinentSection[] {
+function groupByContinent(people: PeopleRow[]): PeopleSection[] {
   const byContinent = new Map<string, PeopleRow[]>();
   people.forEach((p) => {
     const continent = continentForCountry(p.country);
@@ -52,6 +53,46 @@ function groupByContinent(people: PeopleRow[]): ContinentSection[] {
   }));
 }
 
+/**
+ * Skupine po letu srečanja (met_date), urejene po izbrani smeri – tako
+ * vrstni red letnih sekcij kot oseb znotraj njih. Osebe brez met_date gredo
+ * v posebno sekcijo "Unknown date" na koncu (ne glede na smer).
+ */
+function groupByMetYear(people: PeopleRow[], direction: MetDateDirection): PeopleSection[] {
+  const byYear = new Map<string, PeopleRow[]>();
+  const unknown: PeopleRow[] = [];
+
+  people.forEach((p) => {
+    if (!p.met_date) {
+      unknown.push(p);
+      return;
+    }
+    const year = p.met_date.slice(0, 4);
+    const list = byYear.get(year);
+    if (list) list.push(p);
+    else byYear.set(year, [p]);
+  });
+
+  const years = Array.from(byYear.keys()).sort((a, b) => (direction === 'newest' ? b.localeCompare(a) : a.localeCompare(b)));
+
+  const sections: PeopleSection[] = years.map((year) => ({
+    title: year,
+    data: [...byYear.get(year)!].sort((a, b) => {
+      const cmp = (a.met_date ?? '').localeCompare(b.met_date ?? '');
+      return direction === 'newest' ? -cmp : cmp;
+    }),
+  }));
+
+  if (unknown.length > 0) {
+    sections.push({
+      title: STRINGS.list.unknownDateSection,
+      data: [...unknown].sort((a, b) => a.first_name.localeCompare(b.first_name, 'sl')),
+    });
+  }
+
+  return sections;
+}
+
 /** Ena siva "okostna" vrstica – prikazana med prvim nalaganjem namesto spinnerja. */
 function SkeletonRow() {
   const { colors } = useTheme();
@@ -69,26 +110,11 @@ function SkeletonRow() {
 
 const SKELETON_ROWS = [0, 1, 2, 3, 4, 5];
 
-/** Razvrščanje za navaden (ne-sekcijski) seznam – "continent" se razreši v ListScreen prek groupByContinent. */
-function sortPeople(people: PeopleRow[], key: Exclude<SortKey, 'continent'>): PeopleRow[] {
+/** Razvrščanje za navaden (ne-sekcijski) seznam – "continent"/"metDate" se vedno prikažeta kot SectionList. */
+function sortPeople(people: PeopleRow[], key: 'alpha' | 'country'): PeopleRow[] {
   const sorted = [...people];
-  switch (key) {
-    case 'alpha':
-      sorted.sort((a, b) => a.first_name.localeCompare(b.first_name, 'sl'));
-      break;
-    case 'metDate':
-      // najnovejši najprej; osebe brez datuma srečanja na konec
-      sorted.sort((a, b) => {
-        if (!a.met_date && !b.met_date) return 0;
-        if (!a.met_date) return 1;
-        if (!b.met_date) return -1;
-        return b.met_date.localeCompare(a.met_date);
-      });
-      break;
-    case 'country':
-      sorted.sort((a, b) => a.country.localeCompare(b.country, 'sl'));
-      break;
-  }
+  if (key === 'alpha') sorted.sort((a, b) => a.first_name.localeCompare(b.first_name, 'sl'));
+  else sorted.sort((a, b) => a.country.localeCompare(b.country, 'sl'));
   return sorted;
 }
 
@@ -102,6 +128,7 @@ export default function ListScreen() {
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('alpha');
+  const [metDateDirection, setMetDateDirection] = useState<MetDateDirection>('newest');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
@@ -178,15 +205,16 @@ export default function ListScreen() {
     [people, query, selectedTags],
   );
 
-  const isByContinent = sortKey === 'continent';
-  const visiblePeople = useMemo(
-    () => (isByContinent ? filteredPeople : sortPeople(filteredPeople, sortKey)),
-    [filteredPeople, sortKey, isByContinent],
-  );
-  const sections = useMemo(
-    () => (isByContinent ? groupByContinent(filteredPeople) : []),
-    [filteredPeople, isByContinent],
-  );
+  const isSectioned = sortKey === 'continent' || sortKey === 'metDate';
+  const visiblePeople = useMemo(() => {
+    if (sortKey === 'alpha' || sortKey === 'country') return sortPeople(filteredPeople, sortKey);
+    return filteredPeople;
+  }, [filteredPeople, sortKey]);
+  const sections = useMemo(() => {
+    if (sortKey === 'continent') return groupByContinent(filteredPeople);
+    if (sortKey === 'metDate') return groupByMetYear(filteredPeople, metDateDirection);
+    return [];
+  }, [filteredPeople, sortKey, metDateDirection]);
 
   const renderPersonRow = ({ item }: { item: PeopleRow }) => (
     <Pressable
@@ -263,6 +291,31 @@ export default function ListScreen() {
         })}
       </View>
 
+      {sortKey === 'metDate' ? (
+        <View style={styles.directionRow}>
+          <Pressable
+            style={[styles.directionBtn, metDateDirection === 'newest' && styles.directionBtnActive]}
+            onPress={() => setMetDateDirection('newest')}
+            accessibilityRole="button"
+            accessibilityState={{ selected: metDateDirection === 'newest' }}
+          >
+            <Text style={[styles.directionText, metDateDirection === 'newest' && styles.directionTextActive]}>
+              {STRINGS.list.sortDirectionNewest}
+            </Text>
+          </Pressable>
+          <Pressable
+            style={[styles.directionBtn, metDateDirection === 'oldest' && styles.directionBtnActive]}
+            onPress={() => setMetDateDirection('oldest')}
+            accessibilityRole="button"
+            accessibilityState={{ selected: metDateDirection === 'oldest' }}
+          >
+            <Text style={[styles.directionText, metDateDirection === 'oldest' && styles.directionTextActive]}>
+              {STRINGS.list.sortDirectionOldest}
+            </Text>
+          </Pressable>
+        </View>
+      ) : null}
+
       {loading && people.length === 0 ? (
         <View style={styles.listContent}>
           {SKELETON_ROWS.map((i) => (
@@ -279,7 +332,7 @@ export default function ListScreen() {
             <Text style={styles.retryBtnText}>{STRINGS.common.retry}</Text>
           </Pressable>
         </View>
-      ) : isByContinent ? (
+      ) : isSectioned ? (
         <SectionList
           sections={sections}
           keyExtractor={(p) => p.id}
@@ -292,8 +345,10 @@ export default function ListScreen() {
           ListEmptyComponent={listEmptyComponent}
           renderSectionHeader={({ section }) => (
             <View style={styles.sectionHeader}>
-              <ContinentIcon continent={section.title} color={colors.primary} size={22} />
-              <Text style={styles.sectionHeaderText}>{section.title.toUpperCase()}</Text>
+              {sortKey === 'continent' ? <ContinentIcon continent={section.title} color={colors.primary} size={22} /> : null}
+              <Text style={styles.sectionHeaderText}>
+                {sortKey === 'continent' ? section.title.toUpperCase() : section.title}
+              </Text>
             </View>
           )}
           renderItem={renderPersonRow}
@@ -342,6 +397,21 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
   sortChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   sortChipText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary },
   sortChipTextActive: { color: colors.onPrimary },
+
+  directionRow: {
+    flexDirection: 'row',
+    backgroundColor: colors.surface,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 3,
+    marginHorizontal: 16,
+    marginTop: 8,
+  },
+  directionBtn: { flex: 1, paddingVertical: 7, borderRadius: 999, alignItems: 'center' },
+  directionBtnActive: { backgroundColor: colors.primary },
+  directionText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary },
+  directionTextActive: { color: colors.onPrimary },
 
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 },
   errorText: { fontSize: 14, color: colors.textSecondary, textAlign: 'center' },

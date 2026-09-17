@@ -196,6 +196,9 @@ export const STRINGS = {
     sortMetDate: 'Meeting date',
     sortCountry: 'Country',
     sortContinent: 'Continent',
+    sortDirectionOldest: 'Oldest first',
+    sortDirectionNewest: 'Newest first',
+    unknownDateSection: 'Unknown date',
     noFilterResults: 'No results for your search/filter.',
   },
 
