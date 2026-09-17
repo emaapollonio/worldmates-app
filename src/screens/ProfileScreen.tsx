@@ -1,10 +1,11 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { View, Text, Image, Alert, ActivityIndicator, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, Image, Alert, ActivityIndicator, Pressable, ScrollView, Switch, StyleSheet } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import Toast from 'react-native-toast-message';
 
+import appConfig from '../../app.json';
 import { supabase } from '../lib/supabase';
 import { listPeople, computeStats, computeCountryCounts, type PeopleRow } from '../lib/people';
 import { getProfile, updateProfile, type EditableProfileFields, type ProfileRow } from '../lib/profiles';
@@ -15,6 +16,7 @@ import { FONT_SERIF_BOLD } from '../theme/typography';
 import { STRINGS } from '../constants/strings';
 import EditFieldModal from '../components/EditFieldModal';
 import MetStampBadge from '../components/MetStampBadge';
+import SettingsRow from '../components/SettingsRow';
 
 type EditableField = 'display_name' | 'tagline' | 'home_country';
 
@@ -36,7 +38,7 @@ function StatCard({ value, label }: { value: number; label: string }) {
 }
 
 export default function ProfileScreen() {
-  const { colors } = useTheme();
+  const { colors, isDarkMode, setDarkMode } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [userId, setUserId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
@@ -218,9 +220,33 @@ export default function ProfileScreen() {
         )}
       </View>
 
-      <Pressable style={({ pressed }) => [styles.logoutBtn, pressed && styles.logoutBtnPressed]} onPress={onLogout}>
-        <Text style={styles.logoutBtnText}>{STRINGS.profile.logoutButton}</Text>
-      </Pressable>
+      <View style={styles.settingsSection}>
+        <Text style={styles.statsTitle}>{STRINGS.profile.settingsTitle}</Text>
+        <View style={styles.settingsList}>
+          <SettingsRow
+            icon="moon-outline"
+            label={STRINGS.profile.darkModeLabel}
+            onPress={() => setDarkMode(!isDarkMode)}
+            right={
+              <Switch
+                value={isDarkMode}
+                onValueChange={setDarkMode}
+                trackColor={{ false: colors.border, true: colors.primary }}
+                thumbColor={colors.onPrimary}
+              />
+            }
+          />
+          <SettingsRow
+            icon="information-circle-outline"
+            label={STRINGS.profile.aboutLabel}
+            right={<Text style={styles.settingsValue}>{STRINGS.profile.aboutVersion(appConfig.expo.version)}</Text>}
+          />
+        </View>
+
+        <View style={styles.logoutRow}>
+          <SettingsRow icon="log-out-outline" label={STRINGS.profile.logoutButton} destructive onPress={onLogout} />
+        </View>
+      </View>
 
       <EditFieldModal
         visible={editingField !== null}
@@ -311,16 +337,15 @@ const createStyles = (colors: AppColors) =>
     statValue: { fontSize: 22, fontWeight: '700', color: colors.primary },
     statLabel: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
 
-    logoutBtn: {
-      marginTop: 28,
+    settingsSection: {
       alignSelf: 'stretch',
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.surface,
-      borderRadius: 14,
-      paddingVertical: 14,
-      alignItems: 'center',
+      marginTop: 32,
+      paddingTop: 20,
+      borderTopWidth: 1,
+      borderStyle: 'dashed',
+      borderTopColor: colors.border,
     },
-    logoutBtnPressed: { opacity: 0.85 },
-    logoutBtnText: { color: colors.textPrimary, fontSize: 15, fontWeight: '600' },
+    settingsList: { gap: 10 },
+    settingsValue: { fontSize: 14, color: colors.textSecondary },
+    logoutRow: { marginTop: 20 },
   });
