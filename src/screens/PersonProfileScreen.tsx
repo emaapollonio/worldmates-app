@@ -28,6 +28,7 @@ import type { AppColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
 import { STRINGS } from '../constants/strings';
 import LoadingState from '../components/LoadingState';
+import MetStampBadge from '../components/MetStampBadge';
 import ShareCard from '../components/ShareCard';
 
 const CONTACT_LABEL: Record<ContactType, string> = STRINGS.contactLabels;
@@ -58,13 +59,6 @@ function buildContactUrl(type: ContactType, value: string): string | null {
     default:
       return null;
   }
-}
-
-/** "YYYY-MM-DD" -> "d. m. YYYY" */
-function formatDate(iso: string): string {
-  const [y, m, d] = iso.split('-');
-  if (!y || !m || !d) return iso;
-  return `${Number(d)}. ${Number(m)}. ${y}`;
 }
 
 export default function PersonProfileScreen() {
@@ -221,19 +215,24 @@ export default function PersonProfileScreen() {
       <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       {/* Glava */}
       <View style={styles.header}>
-        {photos[0] ? (
-          <Image source={{ uri: photos[0] }} style={styles.avatar} />
-        ) : (
-          <View style={[styles.avatar, styles.avatarPlaceholder]}>
-            <Ionicons name="person" size={44} color={colors.textMuted} />
+        <View style={styles.headerRow}>
+          <View style={styles.headerIdentity}>
+            {photos[0] ? (
+              <Image source={{ uri: photos[0] }} style={styles.avatar} />
+            ) : (
+              <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                <Ionicons name="person" size={44} color={colors.textMuted} />
+              </View>
+            )}
+            <Text style={styles.name}>{fullName}</Text>
+            <View style={styles.locationRow}>
+              <Ionicons name="location-outline" size={15} color={colors.textSecondary} />
+              <Text style={styles.location}>
+                {person.city}, {person.country}
+              </Text>
+            </View>
           </View>
-        )}
-        <Text style={styles.name}>{fullName}</Text>
-        <View style={styles.locationRow}>
-          <Ionicons name="location-outline" size={15} color={colors.textSecondary} />
-          <Text style={styles.location}>
-            {person.city}, {person.country}
-          </Text>
+          {hasMeeting ? <MetStampBadge metLocation={person.met_location} metDate={person.met_date} /> : null}
         </View>
       </View>
 
@@ -264,25 +263,6 @@ export default function PersonProfileScreen() {
               <Text style={styles.tagText}>{tag}</Text>
             </View>
           ))}
-        </View>
-      ) : null}
-
-      {/* Kako sva se spoznala */}
-      {hasMeeting ? (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{STRINGS.personProfile.meetingSectionTitle}</Text>
-          {person.met_location ? (
-            <View style={styles.metaRow}>
-              <Ionicons name="map-outline" size={15} color={colors.textSecondary} />
-              <Text style={styles.sectionText}>{person.met_location}</Text>
-            </View>
-          ) : null}
-          {person.met_date ? (
-            <View style={styles.metaRow}>
-              <Ionicons name="calendar-outline" size={15} color={colors.textSecondary} />
-              <Text style={styles.sectionText}>{formatDate(person.met_date)}</Text>
-            </View>
-          ) : null}
         </View>
       ) : null}
 
@@ -385,6 +365,8 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
   offscreen: { position: 'absolute', top: -9999, left: -9999 },
 
   header: { alignItems: 'center', marginBottom: 20 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 18 },
+  headerIdentity: { alignItems: 'center' },
   avatar: { width: 104, height: 104, borderRadius: 52, backgroundColor: colors.surfaceMuted },
   avatarPlaceholder: {
     alignItems: 'center',
@@ -441,7 +423,6 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
     color: colors.textSecondary,
   },
   sectionText: { fontSize: 14, color: colors.textPrimary, lineHeight: 20 },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
 
   actions: { flexDirection: 'row', gap: 12, marginTop: 28 },
   outlineBtn: {

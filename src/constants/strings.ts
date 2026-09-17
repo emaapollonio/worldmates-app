@@ -147,7 +147,6 @@ export const STRINGS = {
     openLinkErrorMessage: 'Could not open the link.',
     writeButtonPrefix: 'Message via ',
     writeButtonNoContact: 'No contact saved',
-    meetingSectionTitle: 'How we met',
     noteSectionTitle: 'Notes',
     gallerySectionTitle: 'Photo gallery',
     deleteConfirmTitle: 'Delete person',
