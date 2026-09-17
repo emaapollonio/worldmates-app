@@ -8,6 +8,7 @@ import type { AppColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
 import { FONT_SERIF_BOLD } from '../theme/typography';
 import { supabase } from '../lib/supabase';
+import { ensureProfile } from '../lib/profiles';
 import { STRINGS } from '../constants/strings';
 import TabNavigator from './TabNavigator';
 import AuthScreen from '../screens/AuthScreen';
@@ -36,6 +37,13 @@ export default function RootNavigator() {
 
     return () => listener.subscription.unsubscribe();
   }, []);
+
+  // Poskrbi, da ima vsak prijavljen uporabnik vrstico v `profiles` (ustvari
+  // jo ob prvi prijavi, sicer je no-op – glej ensureProfile).
+  useEffect(() => {
+    if (!session?.user.id) return;
+    ensureProfile(session.user.id).catch((e) => console.error('[RootNavigator] ensureProfile ni uspel:', e));
+  }, [session?.user.id]);
 
   if (initializing) {
     return (

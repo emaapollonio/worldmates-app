@@ -193,6 +193,11 @@ export const STRINGS = {
   profile: {
     title: 'Profile',
     subtitle: 'Your account, statistics (number of countries / continents) and settings.',
+    editAvatarAccessibilityLabel: 'Change profile picture',
+    avatarPermissionTitle: 'Permission needed',
+    avatarPermissionMessage: 'Allow gallery access to change your profile picture.',
+    avatarUploadErrorMessage: 'Could not update your profile picture.',
+    avatarUpdatedToast: 'Profile picture updated',
     statsTitle: 'Statistics',
     statFriends: 'friends',
     statCountries: 'countries',
