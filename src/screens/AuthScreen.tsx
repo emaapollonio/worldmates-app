@@ -27,14 +27,25 @@ import ForgotPasswordModal from '../components/ForgotPasswordModal';
 export default function AuthScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [forgotPasswordVisible, setForgotPasswordVisible] = useState(false);
+
+  const switchMode = (nextIsSignUp: boolean) => {
+    setIsSignUp(nextIsSignUp);
+    setConfirmPassword('');
+  };
 
   const validate = () => {
     if (!email.trim() || !password) {
       Alert.alert(STRINGS.auth.missingFieldsTitle, STRINGS.auth.missingFieldsMessage);
+      return false;
+    }
+    if (isSignUp && password !== confirmPassword) {
+      Alert.alert(STRINGS.auth.passwordMismatchTitle, STRINGS.auth.passwordMismatchMessage);
       return false;
     }
     return true;
@@ -77,8 +88,8 @@ export default function AuthScreen() {
         <View style={styles.logoWrap}>
           <Ionicons name="earth" size={40} color={colors.primary} />
         </View>
-        <Text style={styles.title}>{STRINGS.auth.appName}</Text>
-        <Text style={styles.subtitle}>{STRINGS.auth.subtitle}</Text>
+        <Text style={styles.title}>{isSignUp ? STRINGS.auth.createAccountTitle : STRINGS.auth.appName}</Text>
+        <Text style={styles.subtitle}>{isSignUp ? STRINGS.auth.createAccountSubtitle : STRINGS.auth.subtitle}</Text>
 
         <View style={styles.field}>
           <Text style={styles.label}>{STRINGS.auth.emailLabel}</Text>
@@ -107,29 +118,44 @@ export default function AuthScreen() {
           />
         </View>
 
+        {isSignUp ? (
+          <View style={styles.field}>
+            <Text style={styles.label}>{STRINGS.auth.confirmPasswordLabel}</Text>
+            <TextInput
+              style={styles.input}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              placeholder={STRINGS.auth.passwordPlaceholder}
+              placeholderTextColor={colors.textMuted}
+              secureTextEntry
+              autoCapitalize="none"
+            />
+          </View>
+        ) : null}
+
         <Pressable
           style={({ pressed }) => [styles.primaryBtn, pressed && styles.primaryBtnPressed, loading && styles.btnDisabled]}
-          onPress={onSignIn}
+          onPress={isSignUp ? onSignUp : onSignIn}
           disabled={loading}
         >
           {loading ? (
             <ActivityIndicator color={colors.onPrimary} />
           ) : (
-            <Text style={styles.primaryBtnText}>{STRINGS.auth.signInButton}</Text>
+            <Text style={styles.primaryBtnText}>{isSignUp ? STRINGS.auth.signUpButton : STRINGS.auth.signInButton}</Text>
           )}
         </Pressable>
 
-        <Pressable
-          style={({ pressed }) => [styles.secondaryBtn, pressed && styles.secondaryBtnPressed, loading && styles.btnDisabled]}
-          onPress={onSignUp}
-          disabled={loading}
-        >
-          <Text style={styles.secondaryBtnText}>{STRINGS.auth.signUpButton}</Text>
+        <Pressable style={styles.switchModeLink} onPress={() => switchMode(!isSignUp)} disabled={loading}>
+          <Text style={styles.switchModeLinkText}>
+            {isSignUp ? STRINGS.auth.switchToLoginPrompt : STRINGS.auth.switchToSignUpPrompt}
+          </Text>
         </Pressable>
 
-        <Pressable style={styles.forgotPasswordLink} onPress={() => setForgotPasswordVisible(true)} disabled={loading}>
-          <Text style={styles.forgotPasswordLinkText}>{STRINGS.auth.forgotPasswordLink}</Text>
-        </Pressable>
+        {!isSignUp ? (
+          <Pressable style={styles.forgotPasswordLink} onPress={() => setForgotPasswordVisible(true)} disabled={loading}>
+            <Text style={styles.forgotPasswordLinkText}>{STRINGS.auth.forgotPasswordLink}</Text>
+          </Pressable>
+        ) : null}
       </ScrollView>
 
       <ForgotPasswordModal
@@ -182,18 +208,8 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
   primaryBtnPressed: { backgroundColor: colors.primaryDark },
   primaryBtnText: { color: colors.onPrimary, fontSize: 16, fontWeight: '700' },
 
-  secondaryBtn: {
-    marginTop: 4,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-    paddingVertical: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  secondaryBtnPressed: { opacity: 0.7 },
-  secondaryBtnText: { color: colors.textPrimary, fontSize: 15, fontWeight: '600' },
+  switchModeLink: { marginTop: 16, alignItems: 'center' },
+  switchModeLinkText: { fontSize: 13, fontWeight: '600', color: colors.primary },
 
   forgotPasswordLink: { marginTop: 12, alignItems: 'center' },
   forgotPasswordLinkText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
