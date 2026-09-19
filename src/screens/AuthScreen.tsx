@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Linking from 'expo-linking';
 
 import { supabase } from '../lib/supabase';
 import type { AppColors } from '../theme/colors';
@@ -19,6 +20,9 @@ import { useTheme } from '../theme/ThemeContext';
 import { FONT_SERIF_BOLD } from '../theme/typography';
 import { STRINGS } from '../constants/strings';
 import ForgotPasswordModal from '../components/ForgotPasswordModal';
+
+/** Pot v custom URL scheme-u (glej "scheme" v app.json), kamor Supabase preusmeri po potrditvi e-pošte. */
+const EMAIL_CONFIRM_PATH = 'confirm-email';
 
 /**
  * Prijava / registracija. Ob uspehu ne navigiramo ročno – RootNavigator
@@ -38,6 +42,19 @@ export default function AuthScreen() {
     setIsSignUp(nextIsSignUp);
     setConfirmPassword('');
   };
+
+  // Uporabnik klikne potrditveno povezavo v e-pošti -> Supabase potrdi
+  // naslov na svoji strani in preusmeri nazaj v app na EMAIL_CONFIRM_PATH
+  // (glej emailRedirectTo v onSignUp spodaj). Tu samo prikažemo sporočilo -
+  // uporabnik se nato prijavi ročno s svojim geslom (ni samodejne prijave).
+  const confirmationUrl = Linking.useURL();
+  useEffect(() => {
+    if (confirmationUrl?.includes(EMAIL_CONFIRM_PATH)) {
+      switchMode(false);
+      Alert.alert(STRINGS.auth.emailConfirmedTitle, STRINGS.auth.emailConfirmedMessage);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [confirmationUrl]);
 
   const validate = () => {
     if (!email.trim() || !password) {
@@ -69,7 +86,11 @@ export default function AuthScreen() {
     if (!validate() || loading) return;
     setLoading(true);
     try {
-      const { error, data } = await supabase.auth.signUp({ email: email.trim(), password });
+      const { error, data } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: { emailRedirectTo: Linking.createURL(EMAIL_CONFIRM_PATH) },
+      });
       if (error) throw error;
       if (!data.session) {
         Alert.alert(STRINGS.auth.confirmEmailTitle, STRINGS.auth.confirmEmailMessage);

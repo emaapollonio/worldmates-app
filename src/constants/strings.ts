@@ -86,6 +86,8 @@ export const STRINGS = {
     signUpFailedTitle: 'Sign up failed',
     confirmEmailTitle: 'Check your email',
     confirmEmailMessage: 'We sent you a confirmation link. Once you confirm your email, you can log in.',
+    emailConfirmedTitle: 'Email confirmed',
+    emailConfirmedMessage: 'You can now log in with your password.',
     forgotPasswordLink: 'Forgot password?',
     resetPasswordTitle: 'Reset password',
     resetPasswordDescription: "Enter your email and we'll send you a link to reset your password.",
