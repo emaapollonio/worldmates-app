@@ -4,12 +4,22 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer, type Theme as NavigationTheme } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
 import * as SplashScreen from 'expo-splash-screen';
+import * as Sentry from '@sentry/react-native';
 import { useFonts, PlayfairDisplay_700Bold } from '@expo-google-fonts/playfair-display';
 
 import RootNavigator from './src/navigation/RootNavigator';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
+import CrashFallback from './src/components/CrashFallback';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
+
+// DSN pride iz .env / EAS env (EXPO_PUBLIC_SENTRY_DSN), nikoli iz kode. Brez DSN
+// (npr. lokalni razvoj) Sentry ostane izklopljen.
+const SENTRY_DSN = process.env.EXPO_PUBLIC_SENTRY_DSN;
+Sentry.init({
+  dsn: SENTRY_DSN,
+  enabled: !!SENTRY_DSN && !__DEV__,
+});
 
 const NAV_FONTS = {
   regular: { fontFamily: 'System', fontWeight: '400' as const },
@@ -49,7 +59,7 @@ function AppContent() {
   );
 }
 
-export default function App() {
+function App() {
   const [fontsLoaded, fontError] = useFonts({ PlayfairDisplay_700Bold });
 
   useEffect(() => {
@@ -63,8 +73,12 @@ export default function App() {
   }
 
   return (
-    <ThemeProvider>
-      <AppContent />
-    </ThemeProvider>
+    <Sentry.ErrorBoundary fallback={() => <CrashFallback />}>
+      <ThemeProvider>
+        <AppContent />
+      </ThemeProvider>
+    </Sentry.ErrorBoundary>
   );
 }
+
+export default Sentry.wrap(App);

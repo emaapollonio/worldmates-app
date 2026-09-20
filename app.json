@@ -50,7 +50,8 @@
         {
           "faceIDPermission": "MetMap uses Face ID to unlock the app for you."
         }
-      ]
+      ],
+      "@sentry/react-native"
     ],
     "extra": {
       "eas": {
