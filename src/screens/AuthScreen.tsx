@@ -45,16 +45,26 @@ export default function AuthScreen() {
 
   // Uporabnik klikne potrditveno povezavo v e-pošti -> Supabase potrdi
   // naslov na svoji strani in preusmeri nazaj v app na EMAIL_CONFIRM_PATH
-  // (glej emailRedirectTo v onSignUp spodaj). Tu samo prikažemo sporočilo -
+  // (glej emailRedirectTo v onSignUp spodaj). Tu samo prikažemo obvestilo -
   // uporabnik se nato prijavi ročno s svojim geslom (ni samodejne prijave).
-  const confirmationUrl = Linking.useURL();
+  // Namenoma getInitialURL + addEventListener v try/catch in vgrajen baner
+  // namesto Alert.alert: ob hladnem zagonu prek povezave nativni Activity
+  // morda še ni povsem pripravljen, zato iz effecta ne kličemo nativnih dialogov.
+  const [emailConfirmed, setEmailConfirmed] = useState(false);
   useEffect(() => {
-    if (confirmationUrl?.includes(EMAIL_CONFIRM_PATH)) {
-      switchMode(false);
-      Alert.alert(STRINGS.auth.emailConfirmedTitle, STRINGS.auth.emailConfirmedMessage);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [confirmationUrl]);
+    const handleUrl = (url: string | null) => {
+      if (url?.includes(EMAIL_CONFIRM_PATH)) {
+        setIsSignUp(false);
+        setConfirmPassword('');
+        setEmailConfirmed(true);
+      }
+    };
+    Linking.getInitialURL()
+      .then(handleUrl)
+      .catch((e) => console.warn('[Auth] getInitialURL ni uspel:', e));
+    const subscription = Linking.addEventListener('url', ({ url }) => handleUrl(url));
+    return () => subscription.remove();
+  }, []);
 
   const validate = () => {
     if (!email.trim() || !password) {
@@ -109,6 +119,15 @@ export default function AuthScreen() {
         <View style={styles.logoWrap}>
           <Ionicons name="earth" size={40} color={colors.primary} />
         </View>
+        {emailConfirmed ? (
+          <View style={styles.confirmedBanner}>
+            <Ionicons name="checkmark-circle" size={20} color={colors.secondary} />
+            <View style={styles.confirmedBannerText}>
+              <Text style={styles.confirmedTitle}>{STRINGS.auth.emailConfirmedTitle}</Text>
+              <Text style={styles.confirmedMessage}>{STRINGS.auth.emailConfirmedMessage}</Text>
+            </View>
+          </View>
+        ) : null}
         <Text style={styles.title}>{isSignUp ? STRINGS.auth.createAccountTitle : STRINGS.auth.appName}</Text>
         <Text style={styles.subtitle}>{isSignUp ? STRINGS.auth.createAccountSubtitle : STRINGS.auth.subtitle}</Text>
 
@@ -228,6 +247,20 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
   },
   primaryBtnPressed: { backgroundColor: colors.primaryDark },
   primaryBtnText: { color: colors.onPrimary, fontSize: 16, fontWeight: '700' },
+
+  confirmedBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: colors.surfaceMuted,
+    borderWidth: 1,
+    borderColor: colors.secondary,
+    borderRadius: 12,
+    padding: 12,
+  },
+  confirmedBannerText: { flex: 1 },
+  confirmedTitle: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
+  confirmedMessage: { fontSize: 13, color: colors.textSecondary, marginTop: 1 },
 
   switchModeLink: { marginTop: 16, alignItems: 'center' },
   switchModeLinkText: { fontSize: 13, fontWeight: '600', color: colors.primary },
