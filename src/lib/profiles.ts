@@ -6,12 +6,13 @@ export type ProfileRow = {
   display_name: string | null;
   avatar_url: string | null;
   home_country: string | null;
+  home_city: string | null;
   tagline: string | null;
   created_at: string;
 };
 
 export type EditableProfileFields = Partial<
-  Pick<ProfileRow, 'display_name' | 'avatar_url' | 'home_country' | 'tagline'>
+  Pick<ProfileRow, 'display_name' | 'avatar_url' | 'home_country' | 'home_city' | 'tagline'>
 >;
 
 /** Naloži profil za dani user id. Vrne null, če ne obstaja. */

@@ -9,6 +9,7 @@ import { useFonts, PlayfairDisplay_700Bold } from '@expo-google-fonts/playfair-d
 
 import RootNavigator from './src/navigation/RootNavigator';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
+import { navigationRef } from './src/navigation/navigationRef';
 import CrashFallback from './src/components/CrashFallback';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -49,7 +50,7 @@ function AppContent() {
 
   return (
     <SafeAreaProvider>
-      <NavigationContainer theme={navTheme}>
+      <NavigationContainer ref={navigationRef} theme={navTheme}>
         <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
         <RootNavigator />
       </NavigationContainer>

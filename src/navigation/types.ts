@@ -1,3 +1,4 @@
+import type { PersonPrefill } from '../lib/qrShare';
 import type { NavigatorScreenParams } from '@react-navigation/native';
 
 /**
@@ -20,7 +21,7 @@ export type RootStackParamList = {
   Auth: undefined;
   Tabs: NavigatorScreenParams<TabParamList> | undefined;
   /** personId prisoten = urejanje obstoječe osebe; odsoten = dodajanje nove. */
-  AddPerson: { personId?: string } | undefined;
+  AddPerson: { personId?: string; prefill?: PersonPrefill } | undefined;
   PersonProfile: { personId: string } | undefined;
 };
 

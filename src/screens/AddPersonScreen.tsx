@@ -28,6 +28,8 @@ import { uploadPersonPhotos } from '../lib/storage';
 import { geocodeLocation, type GeocodeResult } from '../lib/geocoding';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import PlaceAutocompleteInput from '../components/PlaceAutocompleteInput';
+import QrScannerModal from '../components/QrScannerModal';
+import type { PersonPrefill } from '../lib/qrShare';
 import { isNetworkError } from '../lib/network';
 import type { AppColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
@@ -128,6 +130,31 @@ export default function AddPersonScreen() {
   /** Datum srečanja: nova oseba privzeto danes; pri starem zapisu brez datuma ostane null (ne prepišemo z današnjim). */
   const [metDate, setMetDate] = useState<Date | null>(() => (isEditing ? null : new Date()));
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [scannerVisible, setScannerVisible] = useState(false);
+
+  /** Predizpolni obrazec iz QR kode / deep linka – uporabnik lahko vse še popravi pred shranjevanjem. */
+  const applyPrefill = (p: PersonPrefill) => {
+    if (p.firstName) setFirstName(p.firstName);
+    if (p.lastName) setLastName(p.lastName);
+    if (p.country) {
+      setCountry(p.country);
+      setPlaceCoords(null);
+    }
+    if (p.city) {
+      setCity(p.city);
+      setPlaceCoords(null);
+    }
+    if (p.contactType && p.contactValue) {
+      setContacts([{ key: newContactKey(), type: p.contactType, value: p.contactValue }]);
+    }
+    Toast.show({ type: 'success', text1: STRINGS.addPerson.prefilledToast, visibilityTime: 2000 });
+  };
+
+  const prefillParam = route.params?.prefill;
+  useEffect(() => {
+    if (prefillParam && !isEditing) applyPrefill(prefillParam);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefillParam]);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
   const [suggestedTags, setSuggestedTags] = useState<string[]>([]);
@@ -472,6 +499,17 @@ export default function AddPersonScreen() {
           <Text style={styles.privacyText}>{STRINGS.addPerson.privacyNotice}</Text>
         </View>
 
+        {!isEditing ? (
+          <Pressable
+            style={styles.scanQrBtn}
+            onPress={() => setScannerVisible(true)}
+            accessibilityRole="button"
+          >
+            <Ionicons name="qr-code-outline" size={18} color={colors.primary} />
+            <Text style={styles.scanQrBtnText}>{STRINGS.addPerson.scanQrButton}</Text>
+          </Pressable>
+        ) : null}
+
         {/* Fotografija + ime/priimek */}
         <View style={styles.photoRow}>
           <Pressable
@@ -768,6 +806,11 @@ export default function AddPersonScreen() {
           </Text>
         </Pressable>
       </ScrollView>
+      <QrScannerModal
+        visible={scannerVisible}
+        onClose={() => setScannerVisible(false)}
+        onScanned={applyPrefill}
+      />
       </KeyboardAvoidingView>
     </Animated.View>
   );
@@ -889,6 +932,18 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
     borderColor: colors.border,
   },
   contactChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  scanQrBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    marginBottom: 8,
+  },
+  scanQrBtnText: { fontSize: 14, fontWeight: '700', color: colors.primary },
   addContactBtn: {
     flexDirection: 'row',
     alignItems: 'center',

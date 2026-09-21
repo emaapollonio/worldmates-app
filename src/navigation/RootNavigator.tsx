@@ -12,6 +12,9 @@ import { ensureProfile } from '../lib/profiles';
 import { hasSeenOnboarding } from '../lib/onboarding';
 import { isBiometricLoginEnabled } from '../lib/biometrics';
 import { STRINGS } from '../constants/strings';
+import * as Linking from 'expo-linking';
+import { parseShareUrl, type PersonPrefill } from '../lib/qrShare';
+import { navigationRef } from './navigationRef';
 import TabNavigator from './TabNavigator';
 import AuthScreen from '../screens/AuthScreen';
 import OnboardingScreen from '../screens/OnboardingScreen';
@@ -29,6 +32,33 @@ export default function RootNavigator() {
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
   const [biometricGate, setBiometricGate] = useState<'checking' | 'locked' | 'unlocked'>('checking');
   const biometricCheckedRef = useRef(false);
+  const [pendingPrefill, setPendingPrefill] = useState<PersonPrefill | null>(null);
+
+  // Deep link metmap://add-person?... (QR koda, skenirana z navadno kamero) – velja za
+  // hladni in topli zagon; shranimo ga in ga odpremo šele, ko je uporabnik prijavljen.
+  useEffect(() => {
+    const handleUrl = (url: string | null) => {
+      const prefill = url ? parseShareUrl(url) : null;
+      if (prefill) setPendingPrefill(prefill);
+    };
+    Linking.getInitialURL()
+      .then(handleUrl)
+      .catch((e) => console.warn('[RootNavigator] getInitialURL ni uspel:', e));
+    const subscription = Linking.addEventListener('url', ({ url }) => handleUrl(url));
+    return () => subscription.remove();
+  }, []);
+
+  useEffect(() => {
+    if (!pendingPrefill || !session || showOnboarding !== false || biometricGate !== 'unlocked') return;
+    const timer = setInterval(() => {
+      if (navigationRef.isReady()) {
+        navigationRef.navigate('AddPerson', { prefill: pendingPrefill });
+        setPendingPrefill(null);
+        clearInterval(timer);
+      }
+    }, 150);
+    return () => clearInterval(timer);
+  }, [pendingPrefill, session, showOnboarding, biometricGate]);
 
   useEffect(() => {
     // Ena sama preverba na root nivoju, neodvisna od vstopne poti (ikona / deep link).

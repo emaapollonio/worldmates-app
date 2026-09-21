@@ -20,13 +20,15 @@ import EditFieldModal from '../components/EditFieldModal';
 import MetStampBadge from '../components/MetStampBadge';
 import SettingsRow from '../components/SettingsRow';
 import WorldMapHighlight from '../components/WorldMapHighlight';
+import QrShareModal from '../components/QrShareModal';
 
-type EditableField = 'display_name' | 'tagline' | 'home_country';
+type EditableField = 'display_name' | 'tagline' | 'home_country' | 'home_city';
 
 const FIELD_CONFIG: Record<EditableField, { title: string; placeholder: string }> = {
   display_name: { title: STRINGS.profile.editDisplayNameTitle, placeholder: STRINGS.profile.displayNamePlaceholder },
   tagline: { title: STRINGS.profile.editTaglineTitle, placeholder: STRINGS.profile.taglinePlaceholder },
   home_country: { title: STRINGS.profile.editHomeCountryTitle, placeholder: STRINGS.profile.homeCountryPlaceholder },
+  home_city: { title: STRINGS.profile.editHomeCityTitle, placeholder: STRINGS.profile.homeCityPlaceholder },
 };
 
 function StatCard({ value, label }: { value: number; label: string }) {
@@ -50,6 +52,7 @@ export default function ProfileScreen() {
   const [loadingStats, setLoadingStats] = useState(true);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [editingField, setEditingField] = useState<EditableField | null>(null);
+  const [qrVisible, setQrVisible] = useState(false);
   const [biometricSupported, setBiometricSupported] = useState(false);
   const [biometricEnabled, setBiometricEnabled] = useState(false);
 
@@ -239,6 +242,27 @@ export default function ProfileScreen() {
             {profile?.home_country || STRINGS.profile.addHomeCountryPlaceholder}
           </Text>
         </Pressable>
+
+        <Pressable
+          onPress={() => setEditingField('home_city')}
+          style={styles.homeCountryRow}
+          accessibilityRole="button"
+          accessibilityLabel={STRINGS.profile.editHomeCityAccessibilityLabel}
+        >
+          <Ionicons name="business-outline" size={14} color={colors.textSecondary} />
+          <Text style={profile?.home_city ? styles.homeCountry : styles.taglinePlaceholder}>
+            {profile?.home_city || STRINGS.profile.addHomeCityPlaceholder}
+          </Text>
+        </Pressable>
+
+        <Pressable
+          onPress={() => setQrVisible(true)}
+          style={styles.qrButton}
+          accessibilityRole="button"
+        >
+          <Ionicons name="qr-code-outline" size={16} color={colors.primary} />
+          <Text style={styles.qrButtonText}>{STRINGS.profile.myQrButton}</Text>
+        </Pressable>
       </View>
 
       <View style={styles.statsSection}>
@@ -313,6 +337,8 @@ export default function ProfileScreen() {
         </View>
       </View>
 
+      <QrShareModal visible={qrVisible} onClose={() => setQrVisible(false)} profile={profile} email={userEmail} />
+
       <EditFieldModal
         visible={editingField !== null}
         title={editingField ? FIELD_CONFIG[editingField].title : ''}
@@ -320,7 +346,7 @@ export default function ProfileScreen() {
         value={editingField ? (profile?.[editingField] ?? '') : ''}
         onCancel={() => setEditingField(null)}
         onSave={onSaveField}
-        placeAutocomplete={editingField === 'home_country'}
+        placeAutocomplete={editingField === 'home_country' ? 'country' : editingField === 'home_city' ? 'city' : undefined}
       />
     </ScrollView>
   );
@@ -367,6 +393,18 @@ const createStyles = (colors: AppColors) =>
     tagline: { marginTop: 4, fontSize: 13, fontStyle: 'italic', color: colors.textSecondary, textAlign: 'center' },
     taglinePlaceholder: { marginTop: 4, fontSize: 13, color: colors.textMuted, textAlign: 'center' },
     homeCountryRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 8 },
+    qrButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      marginTop: 14,
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: colors.primary,
+    },
+    qrButtonText: { fontSize: 13, fontWeight: '700', color: colors.primary },
     homeCountry: { fontSize: 13, color: colors.textSecondary },
 
     statsSection: { alignSelf: 'stretch', marginTop: 28 },

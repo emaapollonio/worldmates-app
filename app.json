@@ -51,6 +51,12 @@
           "faceIDPermission": "MetMap uses Face ID to unlock the app for you."
         }
       ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "MetMap uses the camera to scan a friend's QR code."
+        }
+      ],
       "@sentry/react-native"
     ],
     "extra": {
