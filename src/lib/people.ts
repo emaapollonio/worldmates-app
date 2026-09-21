@@ -43,12 +43,8 @@ export type PeopleRow = {
 /** Kar dejansko pošljemo v insert – brez polj, ki jih dodeli baza/insertPerson, in brez person_contacts (ločena tabela). */
 type PeopleInsert = Omit<PeopleRow, 'id' | 'created_at' | 'user_id' | 'person_contacts'>;
 
-/**
- * Polja, ki jih obrazec za urejanje sme spremeniti – brez user_id (lastništvo se ne
- * spreminja) in brez met_date (obrazec ga ne prikazuje, zato ga update ne sme prepisati
- * na null). Tagi in met_location/met_latitude/met_longitude so del obrazca.
- */
-export type EditablePersonFields = Omit<PeopleInsert, 'met_date'>;
+/** Polja, ki jih obrazec za urejanje sme spremeniti – brez user_id (lastništvo se ne spreminja). */
+export type EditablePersonFields = PeopleInsert;
 
 function draftToRow(draft: PersonDraft): PeopleInsert {
   return {

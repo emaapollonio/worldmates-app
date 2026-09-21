@@ -120,6 +120,10 @@ export const STRINGS = {
     metLocationPlaceholder: 'e.g. Hostel Oasis, Lisbon (optional)',
     metLocationHint:
       'If it differs from where they live – this is also geocoded automatically, for the "Where we met" view on the map.',
+    metDateSectionTitle: 'When did you meet?',
+    metDateNotSet: 'Date not set',
+    metDateAccessibilityLabel: 'Choose the date you met',
+    clearMetDateAccessibilityLabel: 'Clear the date',
     contactSectionTitle: 'Contact platform',
     addContactButton: '+ Add contact',
     removeContactAccessibilityLabel: 'Remove this contact',

@@ -4,6 +4,7 @@ import { Modal, View, Text, TextInput, Pressable, KeyboardAvoidingView, Platform
 import type { AppColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
 import { STRINGS } from '../constants/strings';
+import PlaceAutocompleteInput from './PlaceAutocompleteInput';
 
 type Props = {
   visible: boolean;
@@ -12,13 +13,23 @@ type Props = {
   placeholder?: string;
   onCancel: () => void;
   onSave: (value: string) => void;
+  /** Predlogi krajev (Nominatim) med tipkanjem – ob izbiri se vpiše ime države (npr. domača država). */
+  placeAutocomplete?: boolean;
 };
 
 /**
  * Majhen modal za urejanje enega besedilnega polja (ime, tagline, domača
  * država na profilu) - Alert.prompt obstaja samo na iOS, zato lasten modal.
  */
-export default function EditFieldModal({ visible, title, value, placeholder, onCancel, onSave }: Props) {
+export default function EditFieldModal({
+  visible,
+  title,
+  value,
+  placeholder,
+  onCancel,
+  onSave,
+  placeAutocomplete,
+}: Props) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
   const [draft, setDraft] = useState(value);
@@ -36,15 +47,24 @@ export default function EditFieldModal({ visible, title, value, placeholder, onC
       >
         <View style={styles.card}>
           <Text style={styles.title}>{title}</Text>
-          <TextInput
-            style={styles.input}
-            value={draft}
-            onChangeText={setDraft}
-            placeholder={placeholder}
-            placeholderTextColor={colors.textMuted}
-            autoFocus
-            autoCapitalize="sentences"
-          />
+          {placeAutocomplete ? (
+            <PlaceAutocompleteInput
+              value={draft}
+              onChangeText={setDraft}
+              onSelectPlace={(place) => setDraft(place.country ?? place.name)}
+              placeholder={placeholder}
+            />
+          ) : (
+            <TextInput
+              style={styles.input}
+              value={draft}
+              onChangeText={setDraft}
+              placeholder={placeholder}
+              placeholderTextColor={colors.textMuted}
+              autoFocus
+              autoCapitalize="sentences"
+            />
+          )}
           <View style={styles.actions}>
             <Pressable style={({ pressed }) => [styles.btn, pressed && styles.btnPressed]} onPress={onCancel}>
               <Text style={styles.btnText}>{STRINGS.common.cancel}</Text>

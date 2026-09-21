@@ -25,13 +25,27 @@ import type { ContactType, PersonContact, PersonDraft } from '../types/person';
 import type { RootStackParamList } from '../navigation/types';
 import { insertPerson, updatePerson, getPerson, listAllTags, type EditablePersonFields } from '../lib/people';
 import { uploadPersonPhotos } from '../lib/storage';
-import { geocodeLocation } from '../lib/geocoding';
+import { geocodeLocation, type GeocodeResult } from '../lib/geocoding';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import PlaceAutocompleteInput from '../components/PlaceAutocompleteInput';
 import { isNetworkError } from '../lib/network';
 import type { AppColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
 import { STRINGS } from '../constants/strings';
 
 /** Loči že naložene (remote) fotografije od na novo izbranih lokalnih (file://…). */
+/** Date -> "YYYY-MM-DD" v lokalnem času (toISOString bi lahko zamaknil dan). */
+function toIsoDate(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+function parseIsoDate(iso: string): Date | null {
+  const [y, m, d] = iso.slice(0, 10).split('-').map(Number);
+  if (!y || !m || !d) return null;
+  return new Date(y, m - 1, d);
+}
+
 function isRemoteUrl(uri: string): boolean {
   return /^https?:\/\//i.test(uri);
 }
@@ -108,6 +122,12 @@ export default function AddPersonScreen() {
   );
   const [note, setNote] = useState('');
   const [metLocation, setMetLocation] = useState('');
+  /** Koordinate, potrjene z izbiro predloga (ali obstoječe pri urejanju) – če so nastavljene, se ne geokodira znova. */
+  const [placeCoords, setPlaceCoords] = useState<GeocodeResult | null>(null);
+  const [metPlaceCoords, setMetPlaceCoords] = useState<GeocodeResult | null>(null);
+  /** Datum srečanja: nova oseba privzeto danes; pri starem zapisu brez datuma ostane null (ne prepišemo z današnjim). */
+  const [metDate, setMetDate] = useState<Date | null>(() => (isEditing ? null : new Date()));
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
   const [suggestedTags, setSuggestedTags] = useState<string[]>([]);
@@ -139,6 +159,13 @@ export default function AddPersonScreen() {
         );
         setNote(row.note ?? '');
         setMetLocation(row.met_location ?? '');
+        setPlaceCoords({ latitude: row.latitude, longitude: row.longitude });
+        setMetPlaceCoords(
+          row.met_latitude != null && row.met_longitude != null
+            ? { latitude: row.met_latitude, longitude: row.met_longitude }
+            : null,
+        );
+        setMetDate(row.met_date ? parseIsoDate(row.met_date) : null);
         setTags(row.tags ?? []);
         setPhotoUris(row.photo_urls && row.photo_urls.length > 0 ? row.photo_urls : row.photo_url ? [row.photo_url] : []);
       } catch (e) {
@@ -269,6 +296,9 @@ export default function AddPersonScreen() {
     setContacts([{ key: newContactKey(), type: 'whatsapp', value: '' }]);
     setNote('');
     setMetLocation('');
+    setPlaceCoords(null);
+    setMetPlaceCoords(null);
+    setMetDate(new Date());
     setTags([]);
     setTagInput('');
   };
@@ -289,7 +319,7 @@ export default function AddPersonScreen() {
     setSaving(true);
     try {
       setSavePhase('geocoding');
-      const location = await geocodeLocation(city.trim(), country.trim());
+      const location = placeCoords ?? (await geocodeLocation(city.trim(), country.trim()));
       if (!location) {
         Alert.alert(
           STRINGS.addPerson.locationNotFoundTitle,
@@ -300,8 +330,8 @@ export default function AddPersonScreen() {
 
       // Kraj srečanja je neobvezen; ce ga geokodiranje ne najde, samo pustimo
       // met koordinate prazne (ne blokiramo celotnega shranjevanja zaradi tega).
-      let metCoords: { latitude: number; longitude: number } | null = null;
-      if (metLocation.trim()) {
+      let metCoords: GeocodeResult | null = metPlaceCoords;
+      if (!metCoords && metLocation.trim()) {
         try {
           metCoords = await geocodeLocation(metLocation.trim(), '');
         } catch (e) {
@@ -355,6 +385,7 @@ export default function AddPersonScreen() {
           contact_type: null,
           contact_value: null,
           note: trimmedNote,
+          met_date: metDate ? toIsoDate(metDate) : null,
           met_location: metLocation.trim() || null,
           met_latitude: metCoords?.latitude ?? null,
           met_longitude: metCoords?.longitude ?? null,
@@ -375,7 +406,7 @@ export default function AddPersonScreen() {
           longitude: location.longitude,
           contacts: finalContacts,
           note: trimmedNote,
-          metDate: null,
+          metDate: metDate ? toIsoDate(metDate) : null,
           metLocation: metLocation.trim() || null,
           metLatitude: metCoords?.latitude ?? null,
           metLongitude: metCoords?.longitude ?? null,
@@ -485,40 +516,89 @@ export default function AddPersonScreen() {
 
         {/* Lokacija */}
         <Text style={styles.sectionTitle}>{STRINGS.addPerson.locationSectionTitle}</Text>
-        <View style={styles.row}>
-          <View style={styles.flex}>
-            <Text style={styles.label}>{STRINGS.addPerson.countryLabel}</Text>
-            <TextInput
-              style={styles.input}
-              value={country}
-              onChangeText={setCountry}
-              placeholder={STRINGS.addPerson.countryPlaceholder}
-              placeholderTextColor={colors.textMuted}
-            />
-          </View>
-          <View style={styles.flex}>
-            <Text style={styles.label}>{STRINGS.addPerson.cityLabel}</Text>
-            <TextInput
-              style={styles.input}
-              value={city}
-              onChangeText={setCity}
-              placeholder={STRINGS.addPerson.cityPlaceholder}
-              placeholderTextColor={colors.textMuted}
-            />
-          </View>
+        <View>
+          <Text style={styles.label}>{STRINGS.addPerson.cityLabel}</Text>
+          <PlaceAutocompleteInput
+            value={city}
+            onChangeText={(text) => {
+              setCity(text);
+              setPlaceCoords(null);
+            }}
+            onSelectPlace={(place) => {
+              setCity(place.name);
+              if (place.country) setCountry(place.country);
+              setPlaceCoords({ latitude: place.latitude, longitude: place.longitude });
+            }}
+            placeholder={STRINGS.addPerson.cityPlaceholder}
+            settlementsOnly
+          />
+        </View>
+        <View>
+          <Text style={styles.label}>{STRINGS.addPerson.countryLabel}</Text>
+          <TextInput
+            style={styles.input}
+            value={country}
+            onChangeText={(text) => {
+              setCountry(text);
+              setPlaceCoords(null);
+            }}
+            placeholder={STRINGS.addPerson.countryPlaceholder}
+            placeholderTextColor={colors.textMuted}
+          />
         </View>
         <Text style={styles.hint}>{STRINGS.addPerson.locationHint}</Text>
 
         {/* Kraj srečanja (neobvezno) */}
         <Text style={styles.sectionTitle}>{STRINGS.addPerson.metLocationSectionTitle}</Text>
-        <TextInput
-          style={styles.input}
+        <PlaceAutocompleteInput
           value={metLocation}
-          onChangeText={setMetLocation}
+          onChangeText={(text) => {
+            setMetLocation(text);
+            setMetPlaceCoords(null);
+          }}
+          onSelectPlace={(place) => {
+            setMetLocation(place.label);
+            setMetPlaceCoords({ latitude: place.latitude, longitude: place.longitude });
+          }}
           placeholder={STRINGS.addPerson.metLocationPlaceholder}
-          placeholderTextColor={colors.textMuted}
         />
         <Text style={styles.hint}>{STRINGS.addPerson.metLocationHint}</Text>
+
+        {/* Datum srečanja */}
+        <Text style={styles.sectionTitle}>{STRINGS.addPerson.metDateSectionTitle}</Text>
+        <Pressable
+          style={styles.dateRow}
+          onPress={() => setShowDatePicker((v) => !v)}
+          accessibilityRole="button"
+          accessibilityLabel={STRINGS.addPerson.metDateAccessibilityLabel}
+        >
+          <Ionicons name="calendar-outline" size={18} color={colors.textSecondary} />
+          <Text style={[styles.dateText, !metDate && styles.dateTextEmpty]}>
+            {metDate ? metDate.toLocaleDateString() : STRINGS.addPerson.metDateNotSet}
+          </Text>
+          {metDate ? (
+            <Pressable
+              onPress={() => setMetDate(null)}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={STRINGS.addPerson.clearMetDateAccessibilityLabel}
+            >
+              <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+            </Pressable>
+          ) : null}
+        </Pressable>
+        {showDatePicker ? (
+          <DateTimePicker
+            value={metDate ?? new Date()}
+            mode="date"
+            display={Platform.OS === 'ios' ? 'inline' : 'default'}
+            maximumDate={new Date()}
+            onChange={(event, selected) => {
+              if (Platform.OS !== 'ios') setShowDatePicker(false);
+              if (event.type !== 'dismissed' && selected) setMetDate(selected);
+            }}
+          />
+        ) : null}
 
         {/* Kontakti */}
         <Text style={styles.sectionTitle}>{STRINGS.addPerson.contactSectionTitle}</Text>
@@ -780,6 +860,20 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
     color: colors.textPrimary,
   },
   textarea: { minHeight: 96, paddingTop: 12 },
+
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  dateText: { flex: 1, fontSize: 15, color: colors.textPrimary },
+  dateTextEmpty: { color: colors.textMuted },
 
   contactEntry: { marginBottom: 12, gap: 6 },
   contactEntryHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

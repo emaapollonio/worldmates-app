@@ -320,6 +320,7 @@ export default function ProfileScreen() {
         value={editingField ? (profile?.[editingField] ?? '') : ''}
         onCancel={() => setEditingField(null)}
         onSave={onSaveField}
+        placeAutocomplete={editingField === 'home_country'}
       />
     </ScrollView>
   );
