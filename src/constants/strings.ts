@@ -291,6 +291,12 @@ export const STRINGS = {
     logoutConfirmTitle: 'Log out',
     logoutConfirmMessage: 'Are you sure you want to log out?',
     logoutErrorTitle: 'Error while logging out',
+    deleteAccountButton: 'Delete account',
+    deleteAccountConfirmTitle: 'Delete account?',
+    deleteAccountConfirmMessage:
+      'This step is irreversible. All your data will be permanently deleted: every person you added, their contacts and photos, and your profile. Your account will be removed and you will be logged out.',
+    deleteAccountConfirmAction: 'Delete everything',
+    deleteAccountErrorTitle: 'Could not delete account',
   },
 
   /** Uvodni zasloni, prikazani samo ob prvem odprtju app (glej src/lib/onboarding.ts). */

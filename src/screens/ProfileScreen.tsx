@@ -21,6 +21,7 @@ import MetStampBadge from '../components/MetStampBadge';
 import SettingsRow from '../components/SettingsRow';
 import WorldMapHighlight from '../components/WorldMapHighlight';
 import QrShareModal from '../components/QrShareModal';
+import { deleteMyAccount } from '../lib/account';
 
 type EditableField = 'display_name' | 'tagline' | 'home_country' | 'home_city';
 
@@ -162,6 +163,31 @@ export default function ProfileScreen() {
       console.error('[Profile] posodobitev profila ni uspela:', e);
       Alert.alert(STRINGS.common.error, STRINGS.profile.saveErrorMessage);
     }
+  };
+
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const onDeleteAccount = () => {
+    Alert.alert(STRINGS.profile.deleteAccountConfirmTitle, STRINGS.profile.deleteAccountConfirmMessage, [
+      { text: STRINGS.common.cancel, style: 'cancel' },
+      {
+        text: STRINGS.profile.deleteAccountConfirmAction,
+        style: 'destructive',
+        onPress: async () => {
+          setDeletingAccount(true);
+          try {
+            await deleteMyAccount();
+            // RootNavigator prek onAuthStateChange sam preklopi na AuthScreen.
+          } catch (e) {
+            console.error('[Profile] izbris računa ni uspel:', e);
+            setDeletingAccount(false);
+            Alert.alert(
+              STRINGS.profile.deleteAccountErrorTitle,
+              e instanceof Error ? e.message : STRINGS.common.genericRetryMessage,
+            );
+          }
+        },
+      },
+    ]);
   };
 
   const onLogout = () => {
@@ -334,6 +360,15 @@ export default function ProfileScreen() {
 
         <View style={styles.logoutRow}>
           <SettingsRow icon="log-out-outline" label={STRINGS.profile.logoutButton} destructive onPress={onLogout} />
+        </View>
+
+        <View style={styles.logoutRow}>
+          <SettingsRow
+            icon="trash-outline"
+            label={deletingAccount ? STRINGS.common.loading : STRINGS.profile.deleteAccountButton}
+            destructive
+            onPress={deletingAccount ? undefined : onDeleteAccount}
+          />
         </View>
       </View>
 
