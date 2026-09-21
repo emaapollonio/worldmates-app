@@ -31,7 +31,11 @@ export default function RootNavigator() {
   const biometricCheckedRef = useRef(false);
 
   useEffect(() => {
-    hasSeenOnboarding().then((seen) => setShowOnboarding(!seen));
+    // Ena sama preverba na root nivoju, neodvisna od vstopne poti (ikona / deep link).
+    // Ob napaki branja zastavice raje pokažemo onboarding, kot da obtičimo na spinnerju.
+    hasSeenOnboarding()
+      .then((seen) => setShowOnboarding(!seen))
+      .catch(() => setShowOnboarding(true));
   }, []);
 
   // Preveri biometrično zaklepanje samo enkrat na zagon app (ne ob vsaki

@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
-import { View, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, Platform, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -44,6 +45,16 @@ function CenterAddButton() {
 export default function TabNavigator() {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const insets = useSafeAreaInsets();
+
+  // Na Androidu (gumbi na zaslonu ali gestna vrstica) mora biti tab bar višji za
+  // insets.bottom, sicer ga sistemska navigacija prekriva – React Navigation pri
+  // eksplicitni višini inseta ne prišteje sam. Na iOS ostane postavitev nespremenjena.
+  const tabBarStyle = useMemo(() => {
+    if (Platform.OS !== 'android') return styles.tabBar;
+    const paddingBottom = Math.max(8, insets.bottom);
+    return [styles.tabBar, { paddingBottom, height: 56 + paddingBottom }];
+  }, [styles.tabBar, insets.bottom]);
 
   return (
     <Tab.Navigator
@@ -51,7 +62,7 @@ export default function TabNavigator() {
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
-        tabBarStyle: styles.tabBar,
+        tabBarStyle,
         tabBarLabelStyle: styles.tabLabel,
       }}
     >
