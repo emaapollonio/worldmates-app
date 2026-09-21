@@ -259,6 +259,13 @@ export const STRINGS = {
     editHomeCityAccessibilityLabel: 'Edit home city',
     addHomeCityPlaceholder: 'Add home city',
     homeCityPlaceholder: 'e.g. Ljubljana',
+    currentLocationTitle: "I'm currently in…",
+    currentLocationPlaceholder: 'e.g. Lisbon, Portugal',
+    currentLocationEmpty: 'Set where you are right now',
+    currentLocationEditAccessibilityLabel: 'Edit current location',
+    updatedDaysAgo: (days: number) =>
+      days === 0 ? 'updated today' : days === 1 ? 'updated yesterday' : `updated ${days} days ago`,
+    shareLocationLabel: 'Share with accepted connections',
     myQrButton: 'My QR code',
     qrTitle: 'My QR code',
     qrDescription: 'A friend can scan this with any camera to start adding you in MetMap. Choose what to include:',

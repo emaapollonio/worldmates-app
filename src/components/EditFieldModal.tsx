@@ -14,7 +14,7 @@ type Props = {
   onCancel: () => void;
   onSave: (value: string) => void;
   /** Predlogi krajev (Nominatim) med tipkanjem – ob izbiri se vpiše država ('country') ali ime naselja ('city'). */
-  placeAutocomplete?: 'country' | 'city';
+  placeAutocomplete?: 'country' | 'city' | 'cityCountry';
 };
 
 /**
@@ -51,8 +51,16 @@ export default function EditFieldModal({
             <PlaceAutocompleteInput
               value={draft}
               onChangeText={setDraft}
-              onSelectPlace={(place) => setDraft(placeAutocomplete === 'city' ? place.name : (place.country ?? place.name))}
-              settlementsOnly={placeAutocomplete === 'city'}
+              onSelectPlace={(place) =>
+                setDraft(
+                  placeAutocomplete === 'country'
+                    ? (place.country ?? place.name)
+                    : placeAutocomplete === 'cityCountry'
+                      ? [place.name, place.country].filter(Boolean).join(', ')
+                      : place.name,
+                )
+              }
+              settlementsOnly={placeAutocomplete !== 'country'}
               placeholder={placeholder}
             />
           ) : (

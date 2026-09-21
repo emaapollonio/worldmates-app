@@ -22,14 +22,16 @@ import SettingsRow from '../components/SettingsRow';
 import WorldMapHighlight from '../components/WorldMapHighlight';
 import QrShareModal from '../components/QrShareModal';
 import { deleteMyAccount } from '../lib/account';
+import { updatedAgoLabel } from '../lib/dates';
 
-type EditableField = 'display_name' | 'tagline' | 'home_country' | 'home_city';
+type EditableField = 'display_name' | 'tagline' | 'home_country' | 'home_city' | 'current_location';
 
 const FIELD_CONFIG: Record<EditableField, { title: string; placeholder: string }> = {
   display_name: { title: STRINGS.profile.editDisplayNameTitle, placeholder: STRINGS.profile.displayNamePlaceholder },
   tagline: { title: STRINGS.profile.editTaglineTitle, placeholder: STRINGS.profile.taglinePlaceholder },
   home_country: { title: STRINGS.profile.editHomeCountryTitle, placeholder: STRINGS.profile.homeCountryPlaceholder },
   home_city: { title: STRINGS.profile.editHomeCityTitle, placeholder: STRINGS.profile.homeCityPlaceholder },
+  current_location: { title: STRINGS.profile.currentLocationTitle, placeholder: STRINGS.profile.currentLocationPlaceholder },
 };
 
 function StatCard({ value, label }: { value: number; label: string }) {
@@ -157,10 +159,23 @@ export default function ProfileScreen() {
     setEditingField(null);
     try {
       const fields: EditableProfileFields = { [field]: value || null };
+      if (field === 'current_location') {
+        fields.current_location_updated_at = value ? new Date().toISOString() : null;
+      }
       const updated = await updateProfile(userId, fields);
       setProfile(updated);
     } catch (e) {
       console.error('[Profile] posodobitev profila ni uspela:', e);
+      Alert.alert(STRINGS.common.error, STRINGS.profile.saveErrorMessage);
+    }
+  };
+
+  const onToggleShareLocation = async (value: boolean) => {
+    if (!userId) return;
+    try {
+      setProfile(await updateProfile(userId, { share_location: value }));
+    } catch (e) {
+      console.error('[Profile] posodobitev deljenja lokacije ni uspela:', e);
       Alert.alert(STRINGS.common.error, STRINGS.profile.saveErrorMessage);
     }
   };
@@ -292,6 +307,40 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.statsSection}>
+        <Text style={styles.statsTitle}>{STRINGS.profile.currentLocationTitle}</Text>
+        <Pressable
+          style={styles.currentLocationCard}
+          onPress={() => setEditingField('current_location')}
+          accessibilityRole="button"
+          accessibilityLabel={STRINGS.profile.currentLocationEditAccessibilityLabel}
+        >
+          <Ionicons name="location" size={18} color={colors.primary} />
+          <View style={styles.currentLocationText}>
+            <Text style={profile?.current_location ? styles.currentLocationValue : styles.taglinePlaceholder}>
+              {profile?.current_location || STRINGS.profile.currentLocationEmpty}
+            </Text>
+            {profile?.current_location ? (
+              <Text style={styles.currentLocationAgo}>{updatedAgoLabel(profile.current_location_updated_at)}</Text>
+            ) : null}
+          </View>
+          <Ionicons name="pencil" size={14} color={colors.textMuted} />
+        </Pressable>
+        <SettingsRow
+          icon="eye-outline"
+          label={STRINGS.profile.shareLocationLabel}
+          onPress={() => onToggleShareLocation(!(profile?.share_location ?? true))}
+          right={
+            <Switch
+              value={profile?.share_location ?? true}
+              onValueChange={onToggleShareLocation}
+              trackColor={{ false: colors.border, true: colors.primary }}
+              thumbColor={colors.onPrimary}
+            />
+          }
+        />
+      </View>
+
+      <View style={styles.statsSection}>
         <Text style={styles.statsTitle}>{STRINGS.profile.statsTitle}</Text>
         {loadingStats ? (
           <ActivityIndicator color={colors.primary} />
@@ -381,7 +430,15 @@ export default function ProfileScreen() {
         value={editingField ? (profile?.[editingField] ?? '') : ''}
         onCancel={() => setEditingField(null)}
         onSave={onSaveField}
-        placeAutocomplete={editingField === 'home_country' ? 'country' : editingField === 'home_city' ? 'city' : undefined}
+        placeAutocomplete={
+          editingField === 'home_country'
+            ? 'country'
+            : editingField === 'home_city'
+              ? 'city'
+              : editingField === 'current_location'
+                ? 'cityCountry'
+                : undefined
+        }
       />
     </ScrollView>
   );
@@ -428,6 +485,20 @@ const createStyles = (colors: AppColors) =>
     tagline: { marginTop: 4, fontSize: 13, fontStyle: 'italic', color: colors.textSecondary, textAlign: 'center' },
     taglinePlaceholder: { marginTop: 4, fontSize: 13, color: colors.textMuted, textAlign: 'center' },
     homeCountryRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 8 },
+    currentLocationCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 14,
+      padding: 14,
+      marginBottom: 10,
+    },
+    currentLocationText: { flex: 1 },
+    currentLocationValue: { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
+    currentLocationAgo: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
     qrButton: {
       flexDirection: 'row',
       alignItems: 'center',

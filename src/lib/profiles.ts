@@ -7,12 +7,16 @@ export type ProfileRow = {
   avatar_url: string | null;
   home_country: string | null;
   home_city: string | null;
+  /** "Mesto, Država" – kje je uporabnik trenutno. */
+  current_location: string | null;
+  current_location_updated_at: string | null;
+  share_location: boolean;
   tagline: string | null;
   created_at: string;
 };
 
 export type EditableProfileFields = Partial<
-  Pick<ProfileRow, 'display_name' | 'avatar_url' | 'home_country' | 'home_city' | 'tagline'>
+  Pick<ProfileRow, 'display_name' | 'avatar_url' | 'home_country' | 'home_city' | 'tagline' | 'current_location' | 'current_location_updated_at' | 'share_location'>
 >;
 
 /** Naloži profil za dani user id. Vrne null, če ne obstaja. */
