@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -24,6 +24,8 @@ import * as Sharing from 'expo-sharing';
 import type { RootStackParamList } from '../navigation/types';
 import type { ContactType } from '../types/person';
 import { getPerson, deletePerson, type PeopleRow, type PersonContactRow } from '../lib/people';
+import { getConnectionLocation, type ConnectionLocation } from '../lib/connections';
+import { updatedAgoLabel } from '../lib/dates';
 import { withAlpha, type AppColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
 import { FONT_SERIF_BOLD } from '../theme/typography';
@@ -76,6 +78,24 @@ export default function PersonProfileScreen() {
   const [sharing, setSharing] = useState(false);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const shareCardRef = useRef<View>(null);
+  const [connectionLocation, setConnectionLocation] = useState<ConnectionLocation | null>(null);
+
+  // Trenutna lokacija povezanega računa: strežnik jo vrne samo pri sprejeti povezavi in če uporabnik deli.
+  // Ob napaki ali brez podatka sekcije preprosto ne pokažemo.
+  const linkedUserId = person?.linked_user_id ?? null;
+  useEffect(() => {
+    setConnectionLocation(null);
+    if (!linkedUserId) return;
+    let cancelled = false;
+    getConnectionLocation(linkedUserId)
+      .then((loc) => {
+        if (!cancelled) setConnectionLocation(loc);
+      })
+      .catch((e) => console.warn('[PersonProfile] lokacija povezave ni na voljo:', e));
+    return () => {
+      cancelled = true;
+    };
+  }, [linkedUserId]);
 
   // Naloži ob vsakem fokusu – tako se po urejanju (AddPerson -> goBack) takoj vidijo sveže vrednosti.
   useFocusEffect(
@@ -238,6 +258,18 @@ export default function PersonProfileScreen() {
         </View>
       </View>
 
+      {connectionLocation ? (
+        <View style={styles.connectionLocation}>
+          <Ionicons name="navigate-circle-outline" size={18} color={colors.secondary} />
+          <View style={styles.connectionLocationText}>
+            <Text style={styles.connectionLocationValue}>
+              {STRINGS.personProfile.currentlyIn(connectionLocation.current_location)}
+            </Text>
+            <Text style={styles.connectionLocationAgo}>{updatedAgoLabel(connectionLocation.current_location_updated_at)}</Text>
+          </View>
+        </View>
+      ) : null}
+
       {/* Kontakti */}
       {person.person_contacts.length > 0 ? (
         <View style={styles.contactsList}>
@@ -398,6 +430,18 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
   galleryRow: { gap: 10, paddingHorizontal: 20 },
   galleryThumb: { width: 72, height: 72, borderRadius: 14, backgroundColor: colors.surfaceMuted },
 
+  connectionLocation: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+  },
+  connectionLocationText: { flex: 1 },
+  connectionLocationValue: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
+  connectionLocationAgo: { fontSize: 12, color: colors.textSecondary, marginTop: 1 },
   contactsList: { gap: 10 },
   contactRow: {
     flexDirection: 'row',

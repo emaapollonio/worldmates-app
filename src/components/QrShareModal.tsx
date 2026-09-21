@@ -15,9 +15,11 @@ type Props = {
   profile: ProfileRow | null;
   /** E-pošta računa – ponujena samo kot izrecna, privzeto izklopljena izbira. */
   email: string | null;
+  /** ID računa – v kodo pride samo, če uporabnik dovoli zahteve za povezavo. */
+  userId: string | null;
 };
 
-type Field = 'firstName' | 'lastName' | 'country' | 'city' | 'contact';
+type Field = 'firstName' | 'lastName' | 'country' | 'city' | 'contact' | 'connect';
 
 function splitName(displayName: string | null | undefined): { first?: string; last?: string } {
   const parts = (displayName ?? '').trim().split(/\s+/).filter(Boolean);
@@ -26,7 +28,7 @@ function splitName(displayName: string | null | undefined): { first?: string; la
 }
 
 /** "Moja QR koda": uporabnik s checkboxi izbere, kaj se zakodira v (navaden URL) QR. Kontakt je privzeto izklopljen. */
-export default function QrShareModal({ visible, onClose, profile, email }: Props) {
+export default function QrShareModal({ visible, onClose, profile, email, userId }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [selected, setSelected] = useState<Record<Field, boolean>>({
@@ -35,6 +37,7 @@ export default function QrShareModal({ visible, onClose, profile, email }: Props
     country: true,
     city: true,
     contact: false,
+    connect: true,
   });
 
   // Ob vsakem odprtju se kontakt spet ponastavi na izklopljeno.
@@ -49,6 +52,7 @@ export default function QrShareModal({ visible, onClose, profile, email }: Props
     country: profile?.home_country,
     city: profile?.home_city,
     contact: email,
+    connect: userId,
   };
 
   const prefill: PersonPrefill = {
@@ -57,6 +61,7 @@ export default function QrShareModal({ visible, onClose, profile, email }: Props
     country: selected.country ? (profile?.home_country ?? undefined) : undefined,
     city: selected.city ? (profile?.home_city ?? undefined) : undefined,
     ...(selected.contact && email ? { contactType: 'email' as const, contactValue: email } : {}),
+    uid: selected.connect && userId ? userId : undefined,
   };
   const hasAnything = Object.values(prefill).some(Boolean);
 
@@ -101,6 +106,23 @@ export default function QrShareModal({ visible, onClose, profile, email }: Props
               );
             })}
             {!name.first ? <Text style={styles.hint}>{STRINGS.profile.qrNameHint}</Text> : null}
+
+            {userId ? (
+              <View style={styles.row}>
+                <Pressable
+                  style={styles.row}
+                  onPress={() => setSelected((prev) => ({ ...prev, connect: !prev.connect }))}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: selected.connect }}
+                >
+                  <Ionicons name={selected.connect ? 'checkbox' : 'square-outline'} size={22} color={colors.primary} />
+                  <View style={styles.rowText}>
+                    <Text style={styles.rowLabel}>{STRINGS.profile.qrConnectToggle}</Text>
+                    <Text style={styles.rowValue}>{STRINGS.profile.qrConnectHint}</Text>
+                  </View>
+                </Pressable>
+              </View>
+            ) : null}
 
             {email ? (
               <View style={styles.contactBox}>

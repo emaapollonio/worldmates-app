@@ -30,6 +30,8 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import PlaceAutocompleteInput from '../components/PlaceAutocompleteInput';
 import QrScannerModal from '../components/QrScannerModal';
 import type { PersonPrefill } from '../lib/qrShare';
+import { supabase } from '../lib/supabase';
+import { requestConnection } from '../lib/connections';
 import { isNetworkError } from '../lib/network';
 import type { AppColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
@@ -131,6 +133,27 @@ export default function AddPersonScreen() {
   const [metDate, setMetDate] = useState<Date | null>(() => (isEditing ? null : new Date()));
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [scannerVisible, setScannerVisible] = useState(false);
+  /** Račun, čigar QR je bil skeniran – ponudimo (neobvezno, ročno) zahtevo za povezavo v app-u. */
+  const [connectTarget, setConnectTarget] = useState<{ uid: string; name: string | null } | null>(null);
+  const [connectStatus, setConnectStatus] = useState<'idle' | 'sending' | 'sent'>('idle');
+
+  const sendConnectionRequest = async () => {
+    if (!connectTarget || connectStatus !== 'idle') return;
+    setConnectStatus('sending');
+    try {
+      const result = await requestConnection(connectTarget.uid);
+      setConnectStatus('sent');
+      Toast.show({
+        type: 'success',
+        text1: result === 'sent' ? STRINGS.addPerson.connectSentToast : STRINGS.addPerson.connectExistsToast,
+        visibilityTime: 2500,
+      });
+    } catch (e) {
+      console.error('[AddPerson] zahteva za povezavo ni uspela:', e);
+      setConnectStatus('idle');
+      Alert.alert(STRINGS.common.error, STRINGS.addPerson.connectError);
+    }
+  };
 
   /** Predizpolni obrazec iz QR kode / deep linka – uporabnik lahko vse še popravi pred shranjevanjem. */
   const applyPrefill = (p: PersonPrefill) => {
@@ -146,6 +169,14 @@ export default function AddPersonScreen() {
     }
     if (p.contactType && p.contactValue) {
       setContacts([{ key: newContactKey(), type: p.contactType, value: p.contactValue }]);
+    }
+    if (p.uid) {
+      supabase.auth.getSession().then(({ data }) => {
+        if (data.session?.user.id !== p.uid) {
+          setConnectTarget({ uid: p.uid as string, name: p.firstName ?? null });
+          setConnectStatus('idle');
+        }
+      });
     }
     Toast.show({ type: 'success', text1: STRINGS.addPerson.prefilledToast, visibilityTime: 2000 });
   };
@@ -432,6 +463,7 @@ export default function AddPersonScreen() {
           latitude: location.latitude,
           longitude: location.longitude,
           contacts: finalContacts,
+          linkedUserId: connectTarget?.uid ?? null,
           note: trimmedNote,
           metDate: metDate ? toIsoDate(metDate) : null,
           metLocation: metLocation.trim() || null,
@@ -508,6 +540,26 @@ export default function AddPersonScreen() {
             <Ionicons name="qr-code-outline" size={18} color={colors.primary} />
             <Text style={styles.scanQrBtnText}>{STRINGS.addPerson.scanQrButton}</Text>
           </Pressable>
+        ) : null}
+
+        {connectTarget ? (
+          <View style={styles.connectCard}>
+            <Text style={styles.connectTitle}>
+              {STRINGS.addPerson.connectTitle(connectTarget.name || STRINGS.addPerson.connectFallbackName)}
+            </Text>
+            <Text style={styles.connectHint}>{STRINGS.addPerson.connectHint}</Text>
+            <Pressable
+              style={[styles.connectBtn, connectStatus !== 'idle' && styles.connectBtnDone]}
+              onPress={sendConnectionRequest}
+              disabled={connectStatus !== 'idle'}
+              accessibilityRole="button"
+            >
+              <Ionicons name={connectStatus === 'sent' ? 'checkmark' : 'people-outline'} size={16} color={colors.primary} />
+              <Text style={styles.connectBtnText}>
+                {connectStatus === 'sent' ? STRINGS.addPerson.connectSentToast : STRINGS.addPerson.connectSend}
+              </Text>
+            </Pressable>
+          </View>
         ) : null}
 
         {/* Fotografija + ime/priimek */}
@@ -932,6 +984,30 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
     borderColor: colors.border,
   },
   contactChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  connectCard: {
+    borderWidth: 1,
+    borderColor: colors.secondary,
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: 14,
+    padding: 12,
+    gap: 6,
+    marginBottom: 8,
+  },
+  connectTitle: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
+  connectHint: { fontSize: 12, color: colors.textSecondary, lineHeight: 17 },
+  connectBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 4,
+    paddingVertical: 9,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  connectBtnDone: { opacity: 0.6 },
+  connectBtnText: { fontSize: 13, fontWeight: '700', color: colors.primary },
   scanQrBtn: {
     flexDirection: 'row',
     alignItems: 'center',

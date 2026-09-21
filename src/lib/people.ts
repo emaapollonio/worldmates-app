@@ -36,12 +36,17 @@ export type PeopleRow = {
   met_longitude: number | null;
   tags: string[] | null;
   created_at: string;
+  /** Račun, ki ga ta zapis predstavlja (glej connections / get_connection_location). */
+  linked_user_id: string | null;
   /** Vsi kontakti osebe (public.person_contacts, naloženi z embedded select). */
   person_contacts: PersonContactRow[];
 };
 
 /** Kar dejansko pošljemo v insert – brez polj, ki jih dodeli baza/insertPerson, in brez person_contacts (ločena tabela). */
-type PeopleInsert = Omit<PeopleRow, 'id' | 'created_at' | 'user_id' | 'person_contacts'>;
+type PeopleInsert = Omit<PeopleRow, 'id' | 'created_at' | 'user_id' | 'person_contacts' | 'linked_user_id'> & {
+  /** Neobvezno: pri urejanju se ne pošlje, zato se obstoječa vrednost ohrani. */
+  linked_user_id?: string | null;
+};
 
 /** Polja, ki jih obrazec za urejanje sme spremeniti – brez user_id (lastništvo se ne spreminja). */
 export type EditablePersonFields = PeopleInsert;
@@ -65,6 +70,7 @@ function draftToRow(draft: PersonDraft): PeopleInsert {
     met_latitude: draft.metLatitude,
     met_longitude: draft.metLongitude,
     tags: draft.tags,
+    ...(draft.linkedUserId ? { linked_user_id: draft.linkedUserId } : {}),
   };
 }
 

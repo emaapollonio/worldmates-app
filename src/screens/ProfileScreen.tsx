@@ -21,6 +21,7 @@ import MetStampBadge from '../components/MetStampBadge';
 import SettingsRow from '../components/SettingsRow';
 import WorldMapHighlight from '../components/WorldMapHighlight';
 import QrShareModal from '../components/QrShareModal';
+import PendingConnectionsSection from '../components/PendingConnectionsSection';
 import { deleteMyAccount } from '../lib/account';
 import { updatedAgoLabel } from '../lib/dates';
 
@@ -306,6 +307,8 @@ export default function ProfileScreen() {
         </Pressable>
       </View>
 
+      <PendingConnectionsSection />
+
       <View style={styles.statsSection}>
         <Text style={styles.statsTitle}>{STRINGS.profile.currentLocationTitle}</Text>
         <Pressable
@@ -421,7 +424,7 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      <QrShareModal visible={qrVisible} onClose={() => setQrVisible(false)} profile={profile} email={userEmail} />
+      <QrShareModal visible={qrVisible} onClose={() => setQrVisible(false)} profile={profile} email={userEmail} userId={userId} />
 
       <EditFieldModal
         visible={editingField !== null}

@@ -25,6 +25,8 @@ export interface Person {
   latitude: number;
   longitude: number;
   contacts: PersonContact[];
+  /** Uporabniški račun, ki ga ta zapis predstavlja (dodan prek QR kode); null pri navadnih zapisih. */
+  linkedUserId: string | null;
   note: string | null;
   /** ISO datum (YYYY-MM-DD) */
   metDate: string | null;

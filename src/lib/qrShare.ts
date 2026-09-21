@@ -9,10 +9,13 @@ export type PersonPrefill = {
   city?: string;
   contactType?: ContactType;
   contactValue?: string;
+  /** ID računa pošiljatelja – omogoča zahtevo za povezavo v app-u. */
+  uid?: string;
 };
 
 const ADD_PERSON_PATH = 'add-person';
 const MAX_FIELD_LENGTH = 100;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const CONTACT_TYPES: ContactType[] = ['phone', 'whatsapp', 'instagram', 'telegram', 'email'];
 
 /**
@@ -44,6 +47,8 @@ export function parseShareUrl(url: string): PersonPrefill | null {
       country: text('country'),
       city: text('city'),
     };
+    const uid = text('uid');
+    if (uid && UUID_RE.test(uid)) prefill.uid = uid;
     const contactType = text('contactType') as ContactType | undefined;
     const contactValue = text('contactValue');
     if (contactType && CONTACT_TYPES.includes(contactType) && contactValue) {
