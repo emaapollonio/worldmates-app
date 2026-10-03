@@ -33,11 +33,32 @@ export default function EditFieldModal({
   const { colors } = useTheme();
   const styles = createStyles(colors);
   const [draft, setDraft] = useState(value);
+  /**
+   * Besedilo, ki velja za potrjeno: obstoječa vrednost (stari zapisi ostanejo nedotaknjeni)
+   * ali predlog, izbran s seznama. Pri poljih s predlogi krajev prosto tipkano besedilo
+   * ni dovoljeno – prazno polje (brisanje vrednosti) pa je.
+   */
+  const [confirmed, setConfirmed] = useState(value);
+  const [showError, setShowError] = useState(false);
 
   // Ob vsakem odprtju modala ponastavi osnutek na trenutno vrednost polja.
   useEffect(() => {
-    if (visible) setDraft(value);
+    if (visible) {
+      setDraft(value);
+      setConfirmed(value);
+      setShowError(false);
+    }
   }, [visible, value]);
+
+  const needsSelection = !!placeAutocomplete && draft.trim() !== '' && draft !== confirmed;
+
+  const handleSave = () => {
+    if (needsSelection) {
+      setShowError(true);
+      return;
+    }
+    onSave(draft.trim());
+  };
 
   return (
     <Modal visible={visible} animationType="fade" transparent onRequestClose={onCancel}>
@@ -51,17 +72,21 @@ export default function EditFieldModal({
             <PlaceAutocompleteInput
               value={draft}
               onChangeText={setDraft}
-              onSelectPlace={(place) =>
-                setDraft(
+              onSelectPlace={(place) => {
+                const picked =
                   placeAutocomplete === 'country'
                     ? (place.country ?? place.name)
                     : placeAutocomplete === 'cityCountry'
                       ? [place.name, place.country].filter(Boolean).join(', ')
-                      : place.name,
-                )
-              }
+                      : place.name;
+                setDraft(picked);
+                setConfirmed(picked);
+                setShowError(false);
+              }}
               settlementsOnly={placeAutocomplete !== 'country'}
+              countriesOnly={placeAutocomplete === 'country'}
               placeholder={placeholder}
+              error={showError && needsSelection ? STRINGS.common.selectPlaceFromList : null}
             />
           ) : (
             <TextInput
@@ -80,7 +105,7 @@ export default function EditFieldModal({
             </Pressable>
             <Pressable
               style={({ pressed }) => [styles.btn, styles.btnPrimary, pressed && styles.btnPrimaryPressed]}
-              onPress={() => onSave(draft.trim())}
+              onPress={handleSave}
             >
               <Text style={styles.btnPrimaryText}>{STRINGS.common.save}</Text>
             </Pressable>

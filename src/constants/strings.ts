@@ -23,6 +23,8 @@ export const STRINGS = {
     genericRetryMessage: 'Please try again.',
     unknownError: 'Unknown error',
     unnamedPerson: 'Unnamed person',
+    selectPlaceFromList: 'Choose a place from the suggestions',
+    noPlacesFound: 'No matching places found – check the spelling',
     offlineBanner: 'Offline – showing last known data',
     loadPeopleErrorGeneric: 'Could not load people.',
   },
@@ -108,6 +110,7 @@ export const STRINGS = {
 
   addPerson: {
     privacyNotice: 'Private – only you can see the people you add.',
+    invalidPlaceTitle: 'Choose a place from the list',
     atLeastOneTitle: 'Nothing to save yet',
     atLeastOneMessage: 'Add at least one detail to save this person.',
     saveWithoutLocationTitle: 'Location not found',

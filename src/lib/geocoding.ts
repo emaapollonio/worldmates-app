@@ -75,7 +75,9 @@ function toSuggestion(r: NominatimResult): PlaceSuggestion | null {
     r.name || a.city || a.town || a.village || a.municipality || a.hamlet || a.suburb || r.display_name.split(',')[0].trim();
   const region = a.state || a.county || a.region || null;
   const country = a.country || null;
-  const label = [name, region && region !== name ? region : null, country].filter(Boolean).join(', ');
+  const label = [name, region && region !== name ? region : null, country && country !== name ? country : null]
+    .filter(Boolean)
+    .join(', ');
 
   return { id: String(r.place_id), name, region, country, label, latitude, longitude };
 }
@@ -87,7 +89,7 @@ function toSuggestion(r: NominatimResult): PlaceSuggestion | null {
  */
 export async function searchPlaces(
   query: string,
-  options: { settlementsOnly?: boolean; signal?: AbortSignal } = {},
+  options: { settlementsOnly?: boolean; countriesOnly?: boolean; signal?: AbortSignal } = {},
 ): Promise<PlaceSuggestion[]> {
   const params: Record<string, string> = {
     format: 'jsonv2',
@@ -97,6 +99,7 @@ export async function searchPlaces(
     q: query,
   };
   if (options.settlementsOnly) params.featureType = 'settlement';
+  else if (options.countriesOnly) params.featureType = 'country';
 
   const results = await nominatimSearch(params, options.signal);
   if (!results) return [];

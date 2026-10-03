@@ -128,6 +128,18 @@ export default function AddPersonScreen() {
   const [metLocation, setMetLocation] = useState('');
   /** Prosto besedilo ob kraju srečanja, npr. "Spain, Erasmus" (neobvezno). */
   const [metContext, setMetContext] = useState('');
+  /**
+   * Besedilo polj s predlogi krajev, ki velja za potrjeno (izbrano s seznama ali naloženo iz
+   * obstoječega zapisa – stari zapisi ostanejo nedotaknjeni). Prosto tipkano besedilo se ne shrani.
+   */
+  const [confirmedCity, setConfirmedCity] = useState<string | null>(null);
+  const [confirmedCountry, setConfirmedCountry] = useState<string | null>(null);
+  const [confirmedMet, setConfirmedMet] = useState<string | null>(null);
+  const [showPlaceErrors, setShowPlaceErrors] = useState(false);
+  const isUnconfirmed = (value: string, confirmed: string | null) => value.trim() !== '' && value !== confirmed;
+  const cityInvalid = isUnconfirmed(city, confirmedCity);
+  const countryInvalid = isUnconfirmed(country, confirmedCountry);
+  const metInvalid = isUnconfirmed(metLocation, confirmedMet);
   /** Koordinate, potrjene z izbiro predloga (ali obstoječe pri urejanju) – če so nastavljene, se ne geokodira znova. */
   const [placeCoords, setPlaceCoords] = useState<GeocodeResult | null>(null);
   const [metPlaceCoords, setMetPlaceCoords] = useState<GeocodeResult | null>(null);
@@ -161,12 +173,15 @@ export default function AddPersonScreen() {
   const applyPrefill = (p: PersonPrefill) => {
     if (p.firstName) setFirstName(p.firstName);
     if (p.lastName) setLastName(p.lastName);
+    // Vrednosti iz QR kode so že shranjene v profilu druge osebe, zato veljajo za potrjene.
     if (p.country) {
       setCountry(p.country);
+      setConfirmedCountry(p.country);
       setPlaceCoords(null);
     }
     if (p.city) {
       setCity(p.city);
+      setConfirmedCity(p.city);
       setPlaceCoords(null);
     }
     if (p.contactType && p.contactValue) {
@@ -214,6 +229,9 @@ export default function AddPersonScreen() {
         setLastName(row.last_name);
         setCountry(row.country);
         setCity(row.city);
+        setConfirmedCountry(row.country);
+        setConfirmedCity(row.city);
+        setConfirmedMet(row.met_location ?? '');
         setContacts(
           row.person_contacts.map((c) => ({ key: newContactKey(), type: c.contact_type, value: c.contact_value })),
         );
@@ -378,6 +396,10 @@ export default function AddPersonScreen() {
     setNote('');
     setMetLocation('');
     setMetContext('');
+    setConfirmedCity(null);
+    setConfirmedCountry(null);
+    setConfirmedMet(null);
+    setShowPlaceErrors(false);
     setPlaceCoords(null);
     setMetPlaceCoords(null);
     setMetDate(new Date());
@@ -396,6 +418,13 @@ export default function AddPersonScreen() {
       photoUris.length > 0;
     if (!hasAnyDetail) {
       Alert.alert(STRINGS.addPerson.atLeastOneTitle, STRINGS.addPerson.atLeastOneMessage);
+      return;
+    }
+
+    // Kraj, država in kraj srečanja morajo biti izbrani s seznama predlogov (prazno polje je OK).
+    if (cityInvalid || countryInvalid || metInvalid) {
+      setShowPlaceErrors(true);
+      Alert.alert(STRINGS.addPerson.invalidPlaceTitle, STRINGS.common.selectPlaceFromList);
       return;
     }
 
@@ -644,24 +673,37 @@ export default function AddPersonScreen() {
             }}
             onSelectPlace={(place) => {
               setCity(place.name);
-              if (place.country) setCountry(place.country);
+              setConfirmedCity(place.name);
+              if (place.country) {
+                setCountry(place.country);
+                setConfirmedCountry(place.country);
+              }
               setPlaceCoords({ latitude: place.latitude, longitude: place.longitude });
             }}
             placeholder={STRINGS.addPerson.cityPlaceholder}
             settlementsOnly
+            error={showPlaceErrors && cityInvalid ? STRINGS.common.selectPlaceFromList : null}
           />
         </View>
         <View>
           <Text style={styles.label}>{STRINGS.addPerson.countryLabel}</Text>
-          <TextInput
-            style={styles.input}
+          <PlaceAutocompleteInput
             value={country}
             onChangeText={(text) => {
               setCountry(text);
               setPlaceCoords(null);
             }}
+            onSelectPlace={(place) => {
+              const picked = place.country ?? place.name;
+              setCountry(picked);
+              setConfirmedCountry(picked);
+              // Brez mesta je točka na zemljevidu središče države; z izbranim mestom se pri drugi državi koordinate izračunajo ob shranjevanju.
+              if (!city.trim()) setPlaceCoords({ latitude: place.latitude, longitude: place.longitude });
+              else if (picked !== country) setPlaceCoords(null);
+            }}
             placeholder={STRINGS.addPerson.countryPlaceholder}
-            placeholderTextColor={colors.textMuted}
+            countriesOnly
+            error={showPlaceErrors && countryInvalid ? STRINGS.common.selectPlaceFromList : null}
           />
         </View>
         <Text style={styles.hint}>{STRINGS.addPerson.locationHint}</Text>
@@ -676,9 +718,11 @@ export default function AddPersonScreen() {
           }}
           onSelectPlace={(place) => {
             setMetLocation(place.label);
+            setConfirmedMet(place.label);
             setMetPlaceCoords({ latitude: place.latitude, longitude: place.longitude });
           }}
           placeholder={STRINGS.addPerson.metLocationPlaceholder}
+          error={showPlaceErrors && metInvalid ? STRINGS.common.selectPlaceFromList : null}
         />
         <Text style={styles.hint}>{STRINGS.addPerson.metLocationHint}</Text>
         <View>
