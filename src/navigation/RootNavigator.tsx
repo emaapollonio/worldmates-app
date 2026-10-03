@@ -15,6 +15,7 @@ import { STRINGS } from '../constants/strings';
 import * as Linking from 'expo-linking';
 import { parseShareUrl, type PersonPrefill } from '../lib/qrShare';
 import { completeOAuthFromUrl } from '../lib/oauth';
+import { cancelAllBirthdayReminders, syncBirthdayReminders } from '../lib/notifications';
 import { navigationRef } from './navigationRef';
 import TabNavigator from './TabNavigator';
 import AuthScreen from '../screens/AuthScreen';
@@ -108,6 +109,14 @@ export default function RootNavigator() {
     if (!session?.user.id) return;
     ensureProfile(session.user.id).catch((e) => console.error('[RootNavigator] ensureProfile ni uspel:', e));
   }, [session?.user.id]);
+
+  // Rojstnodnevni opomniki: ob zagonu/prijavi uskladi razporejena obvestila z osebami;
+  // po odjavi jih prekliči, da obvestila prejšnjega računa ne ostanejo na telefonu.
+  useEffect(() => {
+    if (initializing) return;
+    const task = session ? syncBirthdayReminders() : cancelAllBirthdayReminders();
+    task.catch((e) => console.warn('[RootNavigator] usklajevanje opomnikov ni uspelo:', e));
+  }, [initializing, session?.user.id]);
 
   if (initializing || showOnboarding === null || biometricGate === 'checking') {
     return (

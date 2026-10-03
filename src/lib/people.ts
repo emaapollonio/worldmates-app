@@ -33,6 +33,8 @@ export type PeopleRow = {
   met_location: string | null;
   /** prosto besedilo ob kraju srečanja (npr. "Spain, Erasmus") */
   met_context: string | null;
+  /** rojstni dan (YYYY-MM-DD), neobvezno – glej lib/notifications */
+  birthday: string | null;
   /** koordinati kraja srečanja, geokodirani iz met_location; null, dokler ni na voljo */
   met_latitude: number | null;
   met_longitude: number | null;
@@ -70,6 +72,7 @@ function draftToRow(draft: PersonDraft): PeopleInsert {
     met_date: draft.metDate,
     met_location: draft.metLocation,
     met_context: draft.metContext,
+    birthday: draft.birthday,
     met_latitude: draft.metLatitude,
     met_longitude: draft.metLongitude,
     tags: draft.tags,

@@ -31,6 +31,7 @@ import QrScannerModal from '../components/QrScannerModal';
 import type { PersonPrefill } from '../lib/qrShare';
 import { supabase } from '../lib/supabase';
 import { requestConnection } from '../lib/connections';
+import { updateBirthdayRemindersForPerson } from '../lib/notifications';
 import { isNetworkError } from '../lib/network';
 import type { AppColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
@@ -145,6 +146,9 @@ export default function AddPersonScreen() {
   /** Datum srečanja: nova oseba privzeto danes; pri starem zapisu brez datuma ostane null (ne prepišemo z današnjim). */
   const [metDate, setMetDate] = useState<Date | null>(() => (isEditing ? null : new Date()));
   const [showDatePicker, setShowDatePicker] = useState(false);
+  /** Rojstni dan (neobvezno) – za opomnike, glej lib/notifications. */
+  const [birthday, setBirthday] = useState<Date | null>(null);
+  const [showBirthdayPicker, setShowBirthdayPicker] = useState(false);
   const [scannerVisible, setScannerVisible] = useState(false);
   /** Račun, čigar QR je bil skeniran – ponudimo (neobvezno, ročno) zahtevo za povezavo v app-u. */
   const [connectTarget, setConnectTarget] = useState<{ uid: string; name: string | null } | null>(null);
@@ -244,6 +248,7 @@ export default function AddPersonScreen() {
             : null,
         );
         setMetDate(row.met_date ? parseIsoDate(row.met_date) : null);
+        setBirthday(row.birthday ? parseIsoDate(row.birthday) : null);
         setTags(row.tags ?? []);
         setPhotoUris(row.photo_urls && row.photo_urls.length > 0 ? row.photo_urls : row.photo_url ? [row.photo_url] : []);
       } catch (e) {
@@ -402,6 +407,8 @@ export default function AddPersonScreen() {
     setPlaceCoords(null);
     setMetPlaceCoords(null);
     setMetDate(new Date());
+    setBirthday(null);
+    setShowBirthdayPicker(false);
     setTags([]);
     setTagInput('');
   };
@@ -414,6 +421,7 @@ export default function AddPersonScreen() {
       [firstName, lastName, country, city, metLocation, metContext, note, tagInput].some((v) => v.trim()) ||
       contacts.some((c) => c.value.trim()) ||
       tags.length > 0 ||
+      birthday !== null ||
       photoUris.length > 0;
     if (!hasAnyDetail) {
       Alert.alert(STRINGS.addPerson.atLeastOneTitle, STRINGS.addPerson.atLeastOneMessage);
@@ -500,12 +508,14 @@ export default function AddPersonScreen() {
           met_date: metDate ? toIsoDate(metDate) : null,
           met_location: metLocation.trim() || null,
           met_context: metContext.trim() || null,
+          birthday: birthday ? toIsoDate(birthday) : null,
           met_latitude: metCoords?.latitude ?? null,
           met_longitude: metCoords?.longitude ?? null,
           tags: tagsField,
         };
         const row = await updatePerson(personId, fields, finalContacts);
         console.log('[AddPerson] posodobljeno v Supabase:\n' + JSON.stringify(row, null, 2));
+        updateBirthdayRemindersForPerson(row).catch((e) => console.warn('[AddPerson] opomnik za rojstni dan ni uspel:', e));
         Toast.show({ type: 'success', text1: STRINGS.addPerson.savedToastEdit, visibilityTime: 2000 });
       } else {
         const draft: PersonDraft = {
@@ -523,12 +533,14 @@ export default function AddPersonScreen() {
           metDate: metDate ? toIsoDate(metDate) : null,
           metLocation: metLocation.trim() || null,
           metContext: metContext.trim() || null,
+          birthday: birthday ? toIsoDate(birthday) : null,
           metLatitude: metCoords?.latitude ?? null,
           metLongitude: metCoords?.longitude ?? null,
           tags: tagsField,
         };
         const row = await insertPerson(draft);
         console.log('[AddPerson] shranjeno v Supabase:\n' + JSON.stringify(row, null, 2));
+        updateBirthdayRemindersForPerson(row).catch((e) => console.warn('[AddPerson] opomnik za rojstni dan ni uspel:', e));
         Toast.show({ type: 'success', text1: STRINGS.addPerson.savedToastAdd, visibilityTime: 2000 });
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
@@ -767,6 +779,42 @@ export default function AddPersonScreen() {
             onChange={(event, selected) => {
               if (Platform.OS !== 'ios') setShowDatePicker(false);
               if (event.type !== 'dismissed' && selected) setMetDate(selected);
+            }}
+          />
+        ) : null}
+
+        {/* Rojstni dan (neobvezno) */}
+        <Text style={styles.sectionTitle}>{STRINGS.addPerson.birthdaySectionTitle}</Text>
+        <Pressable
+          style={styles.dateRow}
+          onPress={() => setShowBirthdayPicker((v) => !v)}
+          accessibilityRole="button"
+          accessibilityLabel={STRINGS.addPerson.birthdayAccessibilityLabel}
+        >
+          <Ionicons name="gift-outline" size={18} color={colors.textSecondary} />
+          <Text style={[styles.dateText, !birthday && styles.dateTextEmpty]}>
+            {birthday ? birthday.toLocaleDateString() : STRINGS.addPerson.birthdayNotSet}
+          </Text>
+          {birthday ? (
+            <Pressable
+              onPress={() => setBirthday(null)}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={STRINGS.addPerson.clearBirthdayAccessibilityLabel}
+            >
+              <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+            </Pressable>
+          ) : null}
+        </Pressable>
+        {showBirthdayPicker ? (
+          <DateTimePicker
+            value={birthday ?? new Date(2000, 0, 1)}
+            mode="date"
+            display={Platform.OS === 'ios' ? 'inline' : 'default'}
+            maximumDate={new Date()}
+            onChange={(event, selected) => {
+              if (Platform.OS !== 'ios') setShowBirthdayPicker(false);
+              if (event.type !== 'dismissed' && selected) setBirthday(selected);
             }}
           />
         ) : null}

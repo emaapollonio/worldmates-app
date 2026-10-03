@@ -121,6 +121,10 @@ export const STRINGS = {
       `We couldn't find "${place}" on the map. You can save without a map location and fix it later.`,
     saveWithoutLocationAction: 'Save anyway',
     setAsProfileAccessibilityLabel: 'Set as profile photo',
+    birthdaySectionTitle: 'Birthday',
+    birthdayNotSet: 'Not set (optional)',
+    birthdayAccessibilityLabel: 'Pick birthday',
+    clearBirthdayAccessibilityLabel: 'Clear birthday',
     metContextLabel: 'Details (optional)',
     metContextPlaceholder: 'e.g. Spain, Erasmus',
     firstNameLabel: 'First name *',
@@ -265,6 +269,19 @@ export const STRINGS = {
     personWordMany: 'people',
   },
 
+  notifications: {
+    birthdayChannelName: 'Birthday reminders',
+    birthdayTitle: 'Birthday reminder 🎂',
+    birthdayTomorrow: (name: string) => `It's ${name}'s birthday tomorrow!`,
+    birthdayToday: (name: string) => `It's ${name}'s birthday today!`,
+    permissionNeededTitle: 'Notifications are turned off',
+    permissionNeededMessage:
+      'MetMap needs permission to send notifications. You can allow them in your phone settings.',
+    openSettings: 'Open settings',
+    unavailableTitle: 'Not available',
+    unavailableMessage: 'Notifications are not available in this version of the app.',
+  },
+
   profile: {
     title: 'Profile',
     subtitle: 'Your account, statistics (number of countries / continents) and settings.',
@@ -329,6 +346,7 @@ export const STRINGS = {
     settingsTitle: 'Settings',
     darkModeLabel: 'Dark mode',
     accessibleFontLabel: 'Easier-to-read font',
+    birthdayRemindersLabel: 'Birthday reminders',
     biometricLabel: 'Unlock with Face ID / fingerprint',
     aboutLabel: 'About',
     aboutVersion: (version: string) => `Version ${version}`,

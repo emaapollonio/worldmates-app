@@ -35,6 +35,8 @@ export interface Person {
   metLocation: string | null;
   /** prosto besedilo ob kraju srečanja, npr. "Spain, Erasmus" */
   metContext: string | null;
+  /** ISO datum rojstnega dne (YYYY-MM-DD); neobvezno, za opomnike */
+  birthday: string | null;
   /** koordinati kraja srečanja (geokodirani iz metLocation) – null, dokler ni izpolnjen/geokodiran */
   metLatitude: number | null;
   metLongitude: number | null;

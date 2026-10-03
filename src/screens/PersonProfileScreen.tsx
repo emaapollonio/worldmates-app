@@ -23,6 +23,7 @@ import * as Sharing from 'expo-sharing';
 
 import type { RootStackParamList } from '../navigation/types';
 import type { ContactType } from '../types/person';
+import { cancelBirthdayRemindersForPerson } from '../lib/notifications';
 import { getPerson, deletePerson, type PeopleRow, type PersonContactRow } from '../lib/people';
 import { personFullName, personPlace } from '../lib/personDisplay';
 import { getConnectionLocation, type ConnectionLocation } from '../lib/connections';
@@ -63,6 +64,12 @@ function buildContactUrl(type: ContactType, value: string): string | null {
     default:
       return null;
   }
+}
+
+/** "YYYY-MM-DD" → lokalno formatiran datum (brez zamika zaradi časovnega pasu). */
+function formatBirthday(iso: string): string {
+  const [y, m, d] = iso.slice(0, 10).split('-').map(Number);
+  return y && m && d ? new Date(y, m - 1, d).toLocaleDateString() : iso;
 }
 
 export default function PersonProfileScreen() {
@@ -184,6 +191,7 @@ export default function PersonProfileScreen() {
             setDeleting(true);
             try {
               await deletePerson(person.id);
+              cancelBirthdayRemindersForPerson(person.id).catch(() => {});
               Toast.show({ type: 'success', text1: STRINGS.personProfile.deletedToast, visibilityTime: 2000 });
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               navigation.goBack();
@@ -249,6 +257,13 @@ export default function PersonProfileScreen() {
                 <Text style={styles.location}>{place}</Text>
               </View>
             ) : null}
+            {person.birthday ? (
+              <View style={styles.locationRow}>
+                <Ionicons name="gift-outline" size={15} color={colors.textSecondary} />
+                <Text style={styles.location}>{formatBirthday(person.birthday)}</Text>
+              </View>
+            ) : null}
+            {person.met_context ? <Text style={styles.metContext}>{person.met_context}</Text> : null}
           </View>
           {hasMeeting ? (
             <MetStampBadge
@@ -426,6 +441,7 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
   name: { marginTop: 12, fontFamily: FONT_SERIF_BOLD, fontSize: 24, color: colors.textPrimary },
   locationRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 },
   location: { fontSize: 14, color: colors.textSecondary },
+  metContext: { marginTop: 4, fontSize: 13, fontStyle: 'italic', color: colors.textSecondary, textAlign: 'center' },
 
   gallerySection: { marginTop: 18, paddingTop: 14, borderTopWidth: 1, borderStyle: 'dashed', borderTopColor: colors.border },
   galleryList: { marginTop: 8, marginHorizontal: -20 },

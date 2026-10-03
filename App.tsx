@@ -19,8 +19,10 @@ import { FontProvider, useFontPreference } from './src/theme/FontContext';
 import { FONT_ACCESSIBLE_BOLD, FONT_ACCESSIBLE_REGULAR } from './src/theme/typography';
 import { navigationRef } from './src/navigation/navigationRef';
 import CrashFallback from './src/components/CrashFallback';
+import { configureNotifications } from './src/lib/notifications';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
+configureNotifications();
 
 // DSN pride iz .env / EAS env (EXPO_PUBLIC_SENTRY_DSN), nikoli iz kode. Brez DSN
 // (npr. lokalni razvoj) Sentry ostane izklopljen.

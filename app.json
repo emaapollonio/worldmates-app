@@ -57,6 +57,12 @@
           "cameraPermission": "MetMap uses the camera to scan a friend's QR code."
         }
       ],
+      [
+        "expo-notifications",
+        {
+          "color": "#C1553A"
+        }
+      ],
       "@sentry/react-native"
     ],
     "extra": {
