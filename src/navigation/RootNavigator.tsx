@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, ActivityIndicator, Alert, StyleSheet } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { Session } from '@supabase/supabase-js';
 
@@ -14,6 +14,7 @@ import { isBiometricLoginEnabled } from '../lib/biometrics';
 import { STRINGS } from '../constants/strings';
 import * as Linking from 'expo-linking';
 import { parseShareUrl, type PersonPrefill } from '../lib/qrShare';
+import { completeOAuthFromUrl } from '../lib/oauth';
 import { navigationRef } from './navigationRef';
 import TabNavigator from './TabNavigator';
 import AuthScreen from '../screens/AuthScreen';
@@ -36,10 +37,15 @@ export default function RootNavigator() {
 
   // Deep link metmap://add-person?... (QR koda, skenirana z navadno kamero) – velja za
   // hladni in topli zagon; shranimo ga in ga odpremo šele, ko je uporabnik prijavljen.
+  // Isti kanal ujame tudi povratni link prijave z Googlom (metmap://auth-callback#…).
   useEffect(() => {
     const handleUrl = (url: string | null) => {
       const prefill = url ? parseShareUrl(url) : null;
       if (prefill) setPendingPrefill(prefill);
+      completeOAuthFromUrl(url).catch((e) => {
+        console.error('[RootNavigator] prijava z Googlom ni uspela:', e);
+        Alert.alert(STRINGS.auth.googleFailedTitle, e instanceof Error ? e.message : STRINGS.common.genericRetryMessage);
+      });
     };
     Linking.getInitialURL()
       .then(handleUrl)

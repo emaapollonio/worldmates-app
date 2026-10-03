@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Linking from 'expo-linking';
 
 import { supabase } from '../lib/supabase';
+import { startGoogleSignIn } from '../lib/oauth';
 import type { AppColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
 import { FONT_SERIF_BOLD } from '../theme/typography';
@@ -87,6 +88,20 @@ export default function AuthScreen() {
     } catch (e) {
       console.error('[Auth] prijava ni uspela:', e);
       Alert.alert(STRINGS.auth.signInFailedTitle, e instanceof Error ? e.message : STRINGS.common.genericRetryMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Brskalnik se odpre izven app-a; sejo vzpostavi RootNavigator, ko se vrne povezava metmap://auth-callback.
+  const onGoogleSignIn = async () => {
+    if (loading) return;
+    setLoading(true);
+    try {
+      await startGoogleSignIn();
+    } catch (e) {
+      console.error('[Auth] prijava z Googlom ni uspela:', e);
+      Alert.alert(STRINGS.auth.googleFailedTitle, e instanceof Error ? e.message : STRINGS.common.genericRetryMessage);
     } finally {
       setLoading(false);
     }
@@ -181,6 +196,22 @@ export default function AuthScreen() {
           )}
         </Pressable>
 
+        <View style={styles.dividerRow}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>{STRINGS.auth.orDivider}</Text>
+          <View style={styles.dividerLine} />
+        </View>
+
+        <Pressable
+          style={({ pressed }) => [styles.googleBtn, pressed && styles.googleBtnPressed, loading && styles.btnDisabled]}
+          onPress={onGoogleSignIn}
+          disabled={loading}
+          accessibilityRole="button"
+        >
+          <Ionicons name="logo-google" size={18} color={colors.textPrimary} />
+          <Text style={styles.googleBtnText}>{STRINGS.auth.googleButton}</Text>
+        </Pressable>
+
         <Pressable style={styles.switchModeLink} onPress={() => switchMode(!isSignUp)} disabled={loading}>
           <Text style={styles.switchModeLinkText}>
             {isSignUp ? STRINGS.auth.switchToLoginPrompt : STRINGS.auth.switchToSignUpPrompt}
@@ -243,6 +274,24 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
   },
   primaryBtnPressed: { backgroundColor: colors.primaryDark },
   primaryBtnText: { color: colors.onPrimary, fontSize: 16, fontWeight: '700' },
+
+  dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 16 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: colors.border },
+  dividerText: { fontSize: 12, color: colors.textSecondary },
+  googleBtn: {
+    marginTop: 4,
+    flexDirection: 'row',
+    gap: 10,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  googleBtnPressed: { backgroundColor: colors.surfaceMuted },
+  googleBtnText: { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
 
   confirmedBanner: {
     flexDirection: 'row',
