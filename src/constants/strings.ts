@@ -270,10 +270,13 @@ export const STRINGS = {
   },
 
   notifications: {
-    birthdayChannelName: 'Birthday reminders',
+    channelName: 'Reminders',
     birthdayTitle: 'Birthday reminder 🎂',
     birthdayTomorrow: (name: string) => `It's ${name}'s birthday tomorrow!`,
     birthdayToday: (name: string) => `It's ${name}'s birthday today!`,
+    flashbackTitle: 'Flashback 📸',
+    flashbackBody: (name: string, years: number, place: string | null) =>
+      `${years === 1 ? 'A year ago' : `${years} years ago`} you met ${name}${place ? ` in ${place}` : ''}.`,
     permissionNeededTitle: 'Notifications are turned off',
     permissionNeededMessage:
       'MetMap needs permission to send notifications. You can allow them in your phone settings.',
@@ -346,7 +349,9 @@ export const STRINGS = {
     settingsTitle: 'Settings',
     darkModeLabel: 'Dark mode',
     accessibleFontLabel: 'Easier-to-read font',
+    notificationsTitle: 'Notifications',
     birthdayRemindersLabel: 'Birthday reminders',
+    flashbackMemoriesLabel: 'Flashback memories',
     biometricLabel: 'Unlock with Face ID / fingerprint',
     aboutLabel: 'About',
     aboutVersion: (version: string) => `Version ${version}`,

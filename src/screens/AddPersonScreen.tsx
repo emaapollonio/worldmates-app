@@ -31,7 +31,7 @@ import QrScannerModal from '../components/QrScannerModal';
 import type { PersonPrefill } from '../lib/qrShare';
 import { supabase } from '../lib/supabase';
 import { requestConnection } from '../lib/connections';
-import { updateBirthdayRemindersForPerson } from '../lib/notifications';
+import { updateRemindersForPerson } from '../lib/notifications';
 import { isNetworkError } from '../lib/network';
 import type { AppColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
@@ -515,7 +515,7 @@ export default function AddPersonScreen() {
         };
         const row = await updatePerson(personId, fields, finalContacts);
         console.log('[AddPerson] posodobljeno v Supabase:\n' + JSON.stringify(row, null, 2));
-        updateBirthdayRemindersForPerson(row).catch((e) => console.warn('[AddPerson] opomnik za rojstni dan ni uspel:', e));
+        updateRemindersForPerson(row).catch((e) => console.warn('[AddPerson] opomniki za osebo niso uspeli:', e));
         Toast.show({ type: 'success', text1: STRINGS.addPerson.savedToastEdit, visibilityTime: 2000 });
       } else {
         const draft: PersonDraft = {
@@ -540,7 +540,7 @@ export default function AddPersonScreen() {
         };
         const row = await insertPerson(draft);
         console.log('[AddPerson] shranjeno v Supabase:\n' + JSON.stringify(row, null, 2));
-        updateBirthdayRemindersForPerson(row).catch((e) => console.warn('[AddPerson] opomnik za rojstni dan ni uspel:', e));
+        updateRemindersForPerson(row).catch((e) => console.warn('[AddPerson] opomniki za osebo niso uspeli:', e));
         Toast.show({ type: 'success', text1: STRINGS.addPerson.savedToastAdd, visibilityTime: 2000 });
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }

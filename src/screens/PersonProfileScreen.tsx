@@ -23,7 +23,7 @@ import * as Sharing from 'expo-sharing';
 
 import type { RootStackParamList } from '../navigation/types';
 import type { ContactType } from '../types/person';
-import { cancelBirthdayRemindersForPerson } from '../lib/notifications';
+import { cancelRemindersForPerson } from '../lib/notifications';
 import { getPerson, deletePerson, type PeopleRow, type PersonContactRow } from '../lib/people';
 import { personFullName, personPlace } from '../lib/personDisplay';
 import { getConnectionLocation, type ConnectionLocation } from '../lib/connections';
@@ -191,7 +191,7 @@ export default function PersonProfileScreen() {
             setDeleting(true);
             try {
               await deletePerson(person.id);
-              cancelBirthdayRemindersForPerson(person.id).catch(() => {});
+              cancelRemindersForPerson(person.id).catch(() => {});
               Toast.show({ type: 'success', text1: STRINGS.personProfile.deletedToast, visibilityTime: 2000 });
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               navigation.goBack();

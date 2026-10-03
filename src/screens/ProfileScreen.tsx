@@ -17,10 +17,11 @@ import type { AppColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
 import { useFontPreference } from '../theme/FontContext';
 import {
-  areBirthdayRemindersEnabled,
-  setBirthdayRemindersEnabled,
+  getEnabledKinds,
+  setKindEnabled,
   requestNotificationPermissionWithExplanation,
-  syncBirthdayReminders,
+  syncAllReminders,
+  type NotificationKind,
 } from '../lib/notifications';
 import { FONT_SERIF_BOLD } from '../theme/typography';
 import { STRINGS } from '../constants/strings';
@@ -54,22 +55,32 @@ function StatCard({ value, label }: { value: number; label: string }) {
   );
 }
 
+/** Vrste obvestil v nastavitvah – nova vrsta = nov vnos tukaj (+ v lib/notifications). */
+const NOTIFICATION_ROWS: { kind: NotificationKind; icon: keyof typeof Ionicons.glyphMap; label: string }[] = [
+  { kind: 'birthday', icon: 'gift-outline', label: STRINGS.profile.birthdayRemindersLabel },
+  { kind: 'flashback', icon: 'images-outline', label: STRINGS.profile.flashbackMemoriesLabel },
+];
+
 export default function ProfileScreen() {
   const { colors, isDarkMode, setDarkMode } = useTheme();
   const { accessibleFont, setAccessibleFont } = useFontPreference();
-  const [birthdayReminders, setBirthdayReminders] = useState(false);
+  /** Stikala za obvestila – privzeto vsa izklopljena (opt-in). */
+  const [enabledKinds, setEnabledKinds] = useState<Record<NotificationKind, boolean>>({
+    birthday: false,
+    flashback: false,
+  });
 
   useEffect(() => {
-    areBirthdayRemindersEnabled().then(setBirthdayReminders);
+    getEnabledKinds().then(setEnabledKinds);
   }, []);
 
-  // Dovoljenje za obvestila zahtevamo šele tu, ob prvem vklopu; ob zavrnitvi stikalo ostane izklopljeno.
-  const onToggleBirthdayReminders = async (value: boolean) => {
+  // Dovoljenje za obvestila zahtevamo šele tu, ob vklopu stikala (če še ni podeljeno); ob zavrnitvi stikalo ostane izklopljeno.
+  const onToggleNotification = async (kind: NotificationKind, value: boolean) => {
     if (value && !(await requestNotificationPermissionWithExplanation())) return;
-    setBirthdayReminders(value);
+    setEnabledKinds((prev) => ({ ...prev, [kind]: value }));
     try {
-      await setBirthdayRemindersEnabled(value);
-      await syncBirthdayReminders();
+      await setKindEnabled(kind, value);
+      await syncAllReminders();
     } catch (e) {
       console.error('[Profile] nastavitev opomnikov ni uspela:', e);
       Alert.alert(STRINGS.common.error, STRINGS.common.genericRetryMessage);
@@ -404,6 +415,28 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.settingsSection}>
+        <Text style={styles.statsTitle}>{STRINGS.profile.notificationsTitle}</Text>
+        <View style={styles.settingsList}>
+          {NOTIFICATION_ROWS.map(({ kind, icon, label }) => (
+            <SettingsRow
+              key={kind}
+              icon={icon}
+              label={label}
+              onPress={() => onToggleNotification(kind, !enabledKinds[kind])}
+              right={
+                <Switch
+                  value={enabledKinds[kind]}
+                  onValueChange={(value) => onToggleNotification(kind, value)}
+                  trackColor={{ false: colors.border, true: colors.primary }}
+                  thumbColor={colors.onPrimary}
+                />
+              }
+            />
+          ))}
+        </View>
+      </View>
+
+      <View style={styles.settingsSection}>
         <Text style={styles.statsTitle}>{STRINGS.profile.settingsTitle}</Text>
         <View style={styles.settingsList}>
           <SettingsRow
@@ -427,19 +460,6 @@ export default function ProfileScreen() {
               <Switch
                 value={accessibleFont}
                 onValueChange={setAccessibleFont}
-                trackColor={{ false: colors.border, true: colors.primary }}
-                thumbColor={colors.onPrimary}
-              />
-            }
-          />
-          <SettingsRow
-            icon="gift-outline"
-            label={STRINGS.profile.birthdayRemindersLabel}
-            onPress={() => onToggleBirthdayReminders(!birthdayReminders)}
-            right={
-              <Switch
-                value={birthdayReminders}
-                onValueChange={onToggleBirthdayReminders}
                 trackColor={{ false: colors.border, true: colors.primary }}
                 thumbColor={colors.onPrimary}
               />
