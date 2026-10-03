@@ -33,6 +33,8 @@ import { useTheme } from '../theme/ThemeContext';
 import { FONT_SERIF_BOLD } from '../theme/typography';
 import { STRINGS } from '../constants/strings';
 import LoadingState from '../components/LoadingState';
+import CountryFactsCard from '../components/CountryFactsCard';
+import { countriesForPerson } from '../lib/countryFacts';
 import MetStampBadge from '../components/MetStampBadge';
 import ShareCard from '../components/ShareCard';
 
@@ -286,6 +288,11 @@ export default function PersonProfileScreen() {
           </View>
         </View>
       ) : null}
+
+      {/* Zanimivosti o državi (bivanja in srečanja) */}
+      {countriesForPerson(person).map(({ country, role }) => (
+        <CountryFactsCard key={`${role}:${country}`} country={country} role={role} />
+      ))}
 
       {/* Kontakti */}
       {person.person_contacts.length > 0 ? (

@@ -269,6 +269,19 @@ export const STRINGS = {
     personWordMany: 'people',
   },
 
+  countryFacts: {
+    livesIn: 'Lives in',
+    metIn: 'Met in',
+    capital: 'Capital',
+    capitals: 'Capitals',
+    language: 'Official language',
+    languages: 'Official languages',
+    currency: 'Currency',
+    currencies: 'Currencies',
+    flagAccessibilityLabel: (country: string) => `Flag of ${country}`,
+    source: 'Data: mledoze/countries (ODbL)',
+  },
+
   notifications: {
     channelName: 'Reminders',
     birthdayTitle: 'Birthday reminder 🎂',
