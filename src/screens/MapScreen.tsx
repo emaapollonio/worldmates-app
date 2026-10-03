@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, Image, Animated, Pressable, ActivityIndicator, Platform, StyleSheet } from 'react-native';
+import { View, Image, Animated, Pressable, ActivityIndicator, Platform, StyleSheet } from 'react-native';
+import { Text } from '../components/AppText';
 import MapView, { Marker, PROVIDER_GOOGLE, type Region } from 'react-native-maps';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';

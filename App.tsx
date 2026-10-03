@@ -6,9 +6,17 @@ import Toast from 'react-native-toast-message';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Sentry from '@sentry/react-native';
 import { useFonts, PlayfairDisplay_700Bold } from '@expo-google-fonts/playfair-display';
+import {
+  AtkinsonHyperlegible_400Regular,
+  AtkinsonHyperlegible_400Regular_Italic,
+  AtkinsonHyperlegible_700Bold,
+  AtkinsonHyperlegible_700Bold_Italic,
+} from '@expo-google-fonts/atkinson-hyperlegible';
 
 import RootNavigator from './src/navigation/RootNavigator';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
+import { FontProvider, useFontPreference } from './src/theme/FontContext';
+import { FONT_ACCESSIBLE_BOLD, FONT_ACCESSIBLE_REGULAR } from './src/theme/typography';
 import { navigationRef } from './src/navigation/navigationRef';
 import CrashFallback from './src/components/CrashFallback';
 
@@ -29,8 +37,22 @@ const NAV_FONTS = {
   heavy: { fontFamily: 'System', fontWeight: '900' as const },
 };
 
+// Naslovi navigacije (glava, zavihki) pri vklopljeni lažje berljivi pisavi; ta ima samo navadno in krepko različico.
+const NAV_FONTS_ACCESSIBLE = {
+  regular: { fontFamily: FONT_ACCESSIBLE_REGULAR, fontWeight: 'normal' as const },
+  medium: { fontFamily: FONT_ACCESSIBLE_REGULAR, fontWeight: 'normal' as const },
+  bold: { fontFamily: FONT_ACCESSIBLE_BOLD, fontWeight: 'normal' as const },
+  heavy: { fontFamily: FONT_ACCESSIBLE_BOLD, fontWeight: 'normal' as const },
+};
+
 function AppContent() {
   const { colors, scheme } = useTheme();
+  const { accessibleFont } = useFontPreference();
+
+  // Splash skrijemo šele, ko je prebrana tudi shranjena izbira pisave (FontProvider do takrat ne izrisuje).
+  useEffect(() => {
+    SplashScreen.hideAsync();
+  }, []);
 
   const navTheme = useMemo<NavigationTheme>(
     () => ({
@@ -43,9 +65,9 @@ function AppContent() {
         border: colors.border,
         notification: colors.primary,
       },
-      fonts: NAV_FONTS,
+      fonts: accessibleFont ? NAV_FONTS_ACCESSIBLE : NAV_FONTS,
     }),
-    [colors, scheme],
+    [colors, scheme, accessibleFont],
   );
 
   return (
@@ -61,13 +83,13 @@ function AppContent() {
 }
 
 function App() {
-  const [fontsLoaded, fontError] = useFonts({ PlayfairDisplay_700Bold });
-
-  useEffect(() => {
-    if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync();
-    }
-  }, [fontsLoaded, fontError]);
+  const [fontsLoaded, fontError] = useFonts({
+    PlayfairDisplay_700Bold,
+    AtkinsonHyperlegible_400Regular,
+    AtkinsonHyperlegible_400Regular_Italic,
+    AtkinsonHyperlegible_700Bold,
+    AtkinsonHyperlegible_700Bold_Italic,
+  });
 
   if (!fontsLoaded && !fontError) {
     return null;
@@ -76,7 +98,9 @@ function App() {
   return (
     <Sentry.ErrorBoundary fallback={() => <CrashFallback />}>
       <ThemeProvider>
-        <AppContent />
+        <FontProvider>
+          <AppContent />
+        </FontProvider>
       </ThemeProvider>
     </Sentry.ErrorBoundary>
   );

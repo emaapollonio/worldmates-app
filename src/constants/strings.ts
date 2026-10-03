@@ -325,6 +325,7 @@ export const STRINGS = {
     stampCount: (count: number) => `×${count}`,
     settingsTitle: 'Settings',
     darkModeLabel: 'Dark mode',
+    accessibleFontLabel: 'Easier-to-read font',
     biometricLabel: 'Unlock with Face ID / fingerprint',
     aboutLabel: 'About',
     aboutVersion: (version: string) => `Version ${version}`,

@@ -10,11 +10,15 @@ export interface AppColors {
   surfaceMuted: string;
   primary: string;
   primaryDark: string;
+  /** Terakota za BESEDILO (povezave, gumbi brez polnila) – temnejša od `primary`, da dosega WCAG AA 4.5:1. */
+  primaryText: string;
   onPrimary: string;
   secondary: string;
   secondaryDark: string;
   accent: string;
   accentDark: string;
+  /** Mustard za BESEDILO (npr. oznake) – temnejši/svetlejši od `accent`, da dosega WCAG AA 4.5:1. */
+  accentText: string;
   textPrimary: string;
   textSecondary: string;
   textMuted: string;
@@ -48,6 +52,7 @@ export const lightColors: AppColors = {
   // Primarna (terakota – žig/pečat)
   primary: palette.terracotta,
   primaryDark: '#A2432C',
+  primaryText: '#9A402A', // ~5.4:1 na kremni podlagi (primary #C1553A je dosegel le ~3.7:1)
   onPrimary: '#FFFFFF',
 
   // Sekundarna (teal – morje/voda na zemljevidu, ločilni poudarki)
@@ -57,13 +62,14 @@ export const lightColors: AppColors = {
   // Akcent (mustard/zlata – značke, aktivni tagi)
   accent: palette.mustard,
   accentDark: '#B4842F',
+  accentText: '#755510', // accentDark je na kremni podlagi dosegel le ~2.7:1
 
   // Besedilo
   textPrimary: palette.ink,
   textSecondary: '#6B5A46',
   // Prvotni #9C8B76 je na kremni podlagi dosegel samo ~2.7:1 (pod WCAG AA
-  // 4.5:1 za navadno besedilo) – potemnjen na ~4.1:1, glej PR "Accessibility improvements".
-  textMuted: '#7D6C56',
+  // 4.5:1 za navadno besedilo); #7D6C56 je dosegel ~4.1:1 – zdaj ≥4.7:1 tudi na surfaceMuted.
+  textMuted: '#6F5E49',
 
   // Ostalo
   border: palette.sand,
@@ -80,6 +86,7 @@ export const darkColors: AppColors = {
   // Primarna – nekoliko svetlejša/živahnejša terakota za kontrast na temnem ozadju
   primary: '#E07858',
   primaryDark: palette.terracotta,
+  primaryText: '#E88A6C', // ≥5:1 na vseh temnih podlagah
   onPrimary: '#241A12',
 
   // Sekundarna – svetlejši teal
@@ -89,11 +96,13 @@ export const darkColors: AppColors = {
   // Akcent – svetlejši mustard
   accent: '#E6BE6C',
   accentDark: palette.mustard,
+  accentText: '#E6BE6C',
 
   // Besedilo – toplo belo/bež namesto čiste bele
   textPrimary: '#F3E7D3',
   textSecondary: '#CBB596',
-  textMuted: '#8C7A63',
+  // Prej #8C7A63: ~3.5:1 na surface, ~3.1:1 na surfaceMuted.
+  textMuted: '#AE9B82',
 
   // Ostalo
   border: '#4A3A28',

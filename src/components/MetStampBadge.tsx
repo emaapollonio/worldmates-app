@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { Text } from './AppText';
 
 import type { AppColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
@@ -57,7 +58,7 @@ const createStyles = (colors: AppColors, size: number) => {
       fontSize: 11 * scale,
       fontWeight: '800',
       letterSpacing: 1.5 * scale,
-      color: colors.primary,
+      color: colors.primaryText,
     },
     primaryText: {
       fontSize: 12 * scale,

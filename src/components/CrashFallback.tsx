@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { Text } from './AppText';
 
 /**
  * Prikazan namesto app, če React drevo vrže napako pri renderiranju (ujame ga

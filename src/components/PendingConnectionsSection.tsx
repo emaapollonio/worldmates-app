@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { View, Text, Pressable, Alert, StyleSheet } from 'react-native';
+import { View, Pressable, Alert, StyleSheet } from 'react-native';
+import { Text } from './AppText';
 import { useFocusEffect } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
 

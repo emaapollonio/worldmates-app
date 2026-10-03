@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Modal, View, Text, Pressable, StyleSheet } from 'react-native';
+import { Modal, View, Pressable, StyleSheet } from 'react-native';
+import { Text } from './AppText';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 
 import { parseShareUrl, type PersonPrefill } from '../lib/qrShare';

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, Image, Alert, ActivityIndicator, Pressable, ScrollView, Switch, StyleSheet } from 'react-native';
+import { View, Image, Alert, ActivityIndicator, Pressable, ScrollView, Switch, StyleSheet } from 'react-native';
+import { Text } from '../components/AppText';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -14,6 +15,7 @@ import { isBiometricAvailable, isBiometricLoginEnabled, setBiometricLoginEnabled
 import { svgCountryName } from '../lib/continents';
 import type { AppColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
+import { useFontPreference } from '../theme/FontContext';
 import { FONT_SERIF_BOLD } from '../theme/typography';
 import { STRINGS } from '../constants/strings';
 import EditFieldModal from '../components/EditFieldModal';
@@ -48,6 +50,7 @@ function StatCard({ value, label }: { value: number; label: string }) {
 
 export default function ProfileScreen() {
   const { colors, isDarkMode, setDarkMode } = useTheme();
+  const { accessibleFont, setAccessibleFont } = useFontPreference();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [userId, setUserId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
@@ -392,6 +395,19 @@ export default function ProfileScreen() {
               />
             }
           />
+          <SettingsRow
+            icon="text-outline"
+            label={STRINGS.profile.accessibleFontLabel}
+            onPress={() => setAccessibleFont(!accessibleFont)}
+            right={
+              <Switch
+                value={accessibleFont}
+                onValueChange={setAccessibleFont}
+                trackColor={{ false: colors.border, true: colors.primary }}
+                thumbColor={colors.onPrimary}
+              />
+            }
+          />
           {biometricSupported ? (
             <SettingsRow
               icon="finger-print-outline"
@@ -522,7 +538,7 @@ const createStyles = (colors: AppColors) =>
       borderWidth: 1,
       borderColor: colors.primary,
     },
-    qrButtonText: { fontSize: 13, fontWeight: '700', color: colors.primary },
+    qrButtonText: { fontSize: 13, fontWeight: '700', color: colors.primaryText },
     homeCountry: { fontSize: 13, color: colors.textSecondary },
 
     statsSection: { alignSelf: 'stretch', marginTop: 28 },

@@ -1,5 +1,6 @@
 import React, { forwardRef } from 'react';
-import { View, Text, Image, StyleSheet } from 'react-native';
+import { View, Image, StyleSheet } from 'react-native';
+import { Text } from './AppText';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { FONT_SERIF_BOLD } from '../theme/typography';

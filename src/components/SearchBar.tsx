@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
-import { View, TextInput, Pressable, StyleSheet, type ViewStyle, type StyleProp } from 'react-native';
+import { View, Pressable, StyleSheet, type ViewStyle, type StyleProp } from 'react-native';
+import { TextInput } from './AppText';
 import { Ionicons } from '@expo/vector-icons';
 import type { AppColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';

@@ -1,8 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
-  Text,
-  TextInput,
   Pressable,
   ScrollView,
   Image,
@@ -14,6 +12,7 @@ import {
   ActivityIndicator,
   type KeyboardTypeOptions,
 } from 'react-native';
+import { Text, TextInput } from '../components/AppText';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
@@ -1097,7 +1096,7 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
     borderColor: colors.primary,
   },
   connectBtnDone: { opacity: 0.6 },
-  connectBtnText: { fontSize: 13, fontWeight: '700', color: colors.primary },
+  connectBtnText: { fontSize: 13, fontWeight: '700', color: colors.primaryText },
   scanQrBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1109,7 +1108,7 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
     borderColor: colors.primary,
     marginBottom: 8,
   },
-  scanQrBtnText: { fontSize: 14, fontWeight: '700', color: colors.primary },
+  scanQrBtnText: { fontSize: 14, fontWeight: '700', color: colors.primaryText },
   addContactBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1122,7 +1121,7 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
     borderColor: colors.border,
     marginBottom: 8,
   },
-  addContactBtnText: { fontSize: 13, fontWeight: '600', color: colors.primary },
+  addContactBtnText: { fontSize: 13, fontWeight: '600', color: colors.primaryText },
 
   galleryRow: { gap: 10, paddingVertical: 2 },
   galleryThumbWrap: { width: 64, height: 64 },

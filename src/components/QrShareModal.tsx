@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Modal, View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { Modal, View, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { Text } from './AppText';
 import { Ionicons } from '@expo/vector-icons';
 import QRCode from 'react-native-qrcode-svg';
 

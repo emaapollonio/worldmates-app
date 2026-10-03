@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { View, Text, Image, FlatList, ScrollView, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Image, FlatList, ScrollView, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import { Text } from '../components/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';

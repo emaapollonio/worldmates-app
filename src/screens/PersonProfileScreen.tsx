@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
-  Text,
   Image,
   FlatList,
   ScrollView,
@@ -12,6 +11,7 @@ import {
   Share,
   StyleSheet,
 } from 'react-native';
+import { Text } from '../components/AppText';
 import { useFocusEffect, useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -479,7 +479,7 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 13,
   },
-  tagText: { fontSize: 12, fontWeight: '700', color: colors.accentDark },
+  tagText: { fontSize: 12, fontWeight: '700', color: colors.accentText },
 
   section: {
     marginTop: 18,

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, TextInput, Pressable, Platform, StyleSheet, type TextInputProps } from 'react-native';
+import { View, Pressable, Platform, StyleSheet, type TextInputProps } from 'react-native';
+import { Text, TextInput } from './AppText';
 import { Ionicons } from '@expo/vector-icons';
 
 import { searchPlaces, type PlaceSuggestion } from '../lib/geocoding';

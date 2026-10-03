@@ -2,8 +2,6 @@ import React, { useEffect, useState } from 'react';
 import {
   Modal,
   View,
-  Text,
-  TextInput,
   Pressable,
   Alert,
   ActivityIndicator,
@@ -11,6 +9,7 @@ import {
   Platform,
   StyleSheet,
 } from 'react-native';
+import { Text, TextInput } from './AppText';
 
 import { supabase } from '../lib/supabase';
 import type { AppColors } from '../theme/colors';

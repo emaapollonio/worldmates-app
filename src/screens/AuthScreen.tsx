@@ -1,8 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
-  Text,
-  TextInput,
   Pressable,
   Alert,
   KeyboardAvoidingView,
@@ -11,6 +9,7 @@ import {
   ScrollView,
   StyleSheet,
 } from 'react-native';
+import { Text, TextInput } from '../components/AppText';
 import { Ionicons } from '@expo/vector-icons';
 import * as Linking from 'expo-linking';
 
@@ -260,7 +259,7 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
   confirmedMessage: { fontSize: 13, color: colors.textSecondary, marginTop: 1 },
 
   switchModeLink: { marginTop: 16, alignItems: 'center' },
-  switchModeLinkText: { fontSize: 13, fontWeight: '600', color: colors.primary },
+  switchModeLinkText: { fontSize: 13, fontWeight: '600', color: colors.primaryText },
 
   forgotPasswordLink: { marginTop: 12, alignItems: 'center' },
   forgotPasswordLinkText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
