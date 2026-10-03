@@ -22,8 +22,8 @@ export type PeopleRow = {
   photo_urls: string[] | null;
   country: string;
   city: string;
-  latitude: number;
-  longitude: number;
+  latitude: number | null;
+  longitude: number | null;
   /** @deprecated osebe od uvedbe person_contacts ne pišejo več v ta stolpca – uporabi person_contacts */
   contact_type: ContactType | null;
   /** @deprecated glej contact_type */
@@ -31,6 +31,8 @@ export type PeopleRow = {
   note: string | null;
   met_date: string | null;
   met_location: string | null;
+  /** prosto besedilo ob kraju srečanja (npr. "Spain, Erasmus") */
+  met_context: string | null;
   /** koordinati kraja srečanja, geokodirani iz met_location; null, dokler ni na voljo */
   met_latitude: number | null;
   met_longitude: number | null;
@@ -67,6 +69,7 @@ function draftToRow(draft: PersonDraft): PeopleInsert {
     note: draft.note,
     met_date: draft.metDate,
     met_location: draft.metLocation,
+    met_context: draft.metContext,
     met_latitude: draft.metLatitude,
     met_longitude: draft.metLongitude,
     tags: draft.tags,
@@ -240,8 +243,10 @@ export type PeopleStats = {
 
 /** Statistika za profil: št. oseb, unikatnih držav in (grobo ocenjenih) celin. */
 export function computeStats(people: PeopleRow[]): PeopleStats {
-  const countries = new Set(people.map((p) => normalizeCountryName(p.country)));
-  const continents = new Set(people.map((p) => continentForCountry(p.country)));
+  // Osebe brez države (shranjene samo z npr. imenom) ne štejejo ne med države ne med celine.
+  const withCountry = people.filter((p) => p.country.trim());
+  const countries = new Set(withCountry.map((p) => normalizeCountryName(p.country)));
+  const continents = new Set(withCountry.map((p) => continentForCountry(p.country)));
   return {
     totalPeople: people.length,
     countryCount: countries.size,

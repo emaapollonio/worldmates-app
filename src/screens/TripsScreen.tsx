@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import type { RootStackParamList } from '../navigation/types';
 import { listPeople, matchesLocation, computeCountryCounts, type PeopleRow } from '../lib/people';
 import { continentForCountry } from '../lib/continents';
+import { personFullName, personPlace } from '../lib/personDisplay';
 import type { AppColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
 import { FONT_SERIF_BOLD } from '../theme/typography';
@@ -172,10 +173,10 @@ export default function TripsScreen() {
                 )}
                 <View style={styles.rowText}>
                   <Text style={styles.rowName}>
-                    {item.first_name} {item.last_name}
+                    {personFullName(item)}
                   </Text>
                   <Text style={styles.rowLocation}>
-                    {item.city}, {item.country}
+                    {personPlace(item)}
                   </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />

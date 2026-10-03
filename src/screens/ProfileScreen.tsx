@@ -265,12 +265,14 @@ export default function ProfileScreen() {
 
         <Pressable
           onPress={() => setEditingField('tagline')}
+          style={styles.homeCountryRow}
           accessibilityRole="button"
           accessibilityLabel={STRINGS.profile.editTaglineAccessibilityLabel}
         >
           <Text style={profile?.tagline ? styles.tagline : styles.taglinePlaceholder}>
             {profile?.tagline || STRINGS.profile.addTaglinePlaceholder}
           </Text>
+          <Ionicons name="pencil" size={12} color={colors.textMuted} />
         </Pressable>
 
         <Pressable
@@ -283,6 +285,7 @@ export default function ProfileScreen() {
           <Text style={profile?.home_country ? styles.homeCountry : styles.taglinePlaceholder}>
             {profile?.home_country || STRINGS.profile.addHomeCountryPlaceholder}
           </Text>
+          <Ionicons name="pencil" size={12} color={colors.textMuted} />
         </Pressable>
 
         <Pressable
@@ -295,6 +298,7 @@ export default function ProfileScreen() {
           <Text style={profile?.home_city ? styles.homeCountry : styles.taglinePlaceholder}>
             {profile?.home_city || STRINGS.profile.addHomeCityPlaceholder}
           </Text>
+          <Ionicons name="pencil" size={12} color={colors.textMuted} />
         </Pressable>
 
         <Pressable
@@ -408,6 +412,11 @@ export default function ProfileScreen() {
             label={STRINGS.profile.aboutLabel}
             right={<Text style={styles.settingsValue}>{STRINGS.profile.aboutVersion(appConfig.expo.version)}</Text>}
           />
+        </View>
+
+        <View style={styles.cloudNote}>
+          <Ionicons name="cloud-done-outline" size={18} color={colors.secondary} />
+          <Text style={styles.cloudNoteText}>{STRINGS.profile.cloudNote}</Text>
         </View>
 
         <View style={styles.logoutRow}>
@@ -559,6 +568,15 @@ const createStyles = (colors: AppColors) =>
       borderTopColor: colors.border,
     },
     settingsList: { gap: 10 },
+    cloudNote: {
+      flexDirection: 'row',
+      gap: 10,
+      marginTop: 12,
+      padding: 12,
+      borderRadius: 12,
+      backgroundColor: colors.surfaceMuted,
+    },
+    cloudNoteText: { flex: 1, fontSize: 12, lineHeight: 17, color: colors.textSecondary },
     settingsValue: { fontSize: 14, color: colors.textSecondary },
     logoutRow: { marginTop: 20 },
   });

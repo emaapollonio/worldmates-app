@@ -9,6 +9,7 @@ import * as Haptics from 'expo-haptics';
 
 import type { RootStackParamList } from '../navigation/types';
 import { listPeople, matchesQuery, matchesTags, collectUniqueTags, type PeopleRow } from '../lib/people';
+import { personFullName, personPlace } from '../lib/personDisplay';
 import { getCachedPeople, setCachedPeople } from '../lib/offlineCache';
 import { colorForLetter, type AppColors } from '../theme/colors';
 import { VINTAGE_MAP_STYLE } from '../theme/mapStyle';
@@ -70,12 +71,9 @@ function PersonMarker({
   return (
     <Marker
       coordinate={coordinate}
-      title={`${person.first_name} ${person.last_name}`}
-      description={`${person.city}, ${person.country}`}
-      accessibilityLabel={STRINGS.map.pinAccessibilityLabel(
-        `${person.first_name} ${person.last_name}`,
-        `${person.city}, ${person.country}`,
-      )}
+      title={personFullName(person)}
+      description={personPlace(person)}
+      accessibilityLabel={STRINGS.map.pinAccessibilityLabel(personFullName(person), personPlace(person))}
       onPress={handlePress}
       tracksViewChanges={tracksViewChanges}
     >
@@ -197,6 +195,7 @@ export default function MapScreen() {
         if (p.met_latitude == null || p.met_longitude == null) return null;
         return { latitude: p.met_latitude, longitude: p.met_longitude };
       }
+      if (p.latitude == null || p.longitude == null) return null;
       return { latitude: p.latitude, longitude: p.longitude };
     },
     [viewMode],
@@ -259,12 +258,9 @@ export default function MapScreen() {
             <Marker
               key={p.id}
               coordinate={coordinate}
-              title={`${p.first_name} ${p.last_name}`}
-              description={`${p.city}, ${p.country}`}
-              accessibilityLabel={STRINGS.map.pinAccessibilityLabel(
-                `${p.first_name} ${p.last_name}`,
-                `${p.city}, ${p.country}`,
-              )}
+              title={personFullName(p)}
+              description={personPlace(p)}
+              accessibilityLabel={STRINGS.map.pinAccessibilityLabel(personFullName(p), personPlace(p))}
               onPress={() => goToProfile(p.id)}
             />
           );

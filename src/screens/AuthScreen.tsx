@@ -20,6 +20,7 @@ import { useTheme } from '../theme/ThemeContext';
 import { FONT_SERIF_BOLD } from '../theme/typography';
 import { STRINGS } from '../constants/strings';
 import ForgotPasswordModal from '../components/ForgotPasswordModal';
+import PasswordInput from '../components/PasswordInput';
 
 /** Pot v custom URL scheme-u (glej "scheme" v app.json), kamor Supabase preusmeri po potrditvi e-pošte. */
 const EMAIL_CONFIRM_PATH = 'confirm-email';
@@ -147,28 +148,24 @@ export default function AuthScreen() {
 
         <View style={styles.field}>
           <Text style={styles.label}>{STRINGS.auth.passwordLabel}</Text>
-          <TextInput
+          <PasswordInput
             style={styles.input}
             value={password}
             onChangeText={setPassword}
             placeholder={STRINGS.auth.passwordPlaceholder}
             placeholderTextColor={colors.textMuted}
-            secureTextEntry
-            autoCapitalize="none"
           />
         </View>
 
         {isSignUp ? (
           <View style={styles.field}>
             <Text style={styles.label}>{STRINGS.auth.confirmPasswordLabel}</Text>
-            <TextInput
+            <PasswordInput
               style={styles.input}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               placeholder={STRINGS.auth.passwordPlaceholder}
               placeholderTextColor={colors.textMuted}
-              secureTextEntry
-              autoCapitalize="none"
             />
           </View>
         ) : null}

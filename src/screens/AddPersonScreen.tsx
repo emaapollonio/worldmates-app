@@ -126,6 +126,8 @@ export default function AddPersonScreen() {
   );
   const [note, setNote] = useState('');
   const [metLocation, setMetLocation] = useState('');
+  /** Prosto besedilo ob kraju srečanja, npr. "Spain, Erasmus" (neobvezno). */
+  const [metContext, setMetContext] = useState('');
   /** Koordinate, potrjene z izbiro predloga (ali obstoječe pri urejanju) – če so nastavljene, se ne geokodira znova. */
   const [placeCoords, setPlaceCoords] = useState<GeocodeResult | null>(null);
   const [metPlaceCoords, setMetPlaceCoords] = useState<GeocodeResult | null>(null);
@@ -217,7 +219,8 @@ export default function AddPersonScreen() {
         );
         setNote(row.note ?? '');
         setMetLocation(row.met_location ?? '');
-        setPlaceCoords({ latitude: row.latitude, longitude: row.longitude });
+        setMetContext(row.met_context ?? '');
+        setPlaceCoords(row.latitude != null && row.longitude != null ? { latitude: row.latitude, longitude: row.longitude } : null);
         setMetPlaceCoords(
           row.met_latitude != null && row.met_longitude != null
             ? { latitude: row.met_latitude, longitude: row.met_longitude }
@@ -318,6 +321,26 @@ export default function AddPersonScreen() {
     setPhotoUris((prev) => prev.filter((u) => u !== uri));
   };
 
+  /** Izbrano sliko premakne na začetek (index 0 = profilna); prejšnja profilna ostane v galeriji. */
+  const setAsProfilePhoto = (uri: string) => {
+    setPhotoUris((prev) => [uri, ...prev.filter((u) => u !== uri)]);
+    Haptics.selectionAsync();
+  };
+
+  /** Geokodiranje ni našlo kraja: vprašaj, ali shranimo brez točke na zemljevidu. */
+  const confirmSaveWithoutLocation = (place: string) =>
+    new Promise<boolean>((resolve) => {
+      Alert.alert(
+        STRINGS.addPerson.saveWithoutLocationTitle,
+        STRINGS.addPerson.saveWithoutLocationMessage(place),
+        [
+          { text: STRINGS.common.cancel, style: 'cancel', onPress: () => resolve(false) },
+          { text: STRINGS.addPerson.saveWithoutLocationAction, onPress: () => resolve(true) },
+        ],
+        { cancelable: true, onDismiss: () => resolve(false) },
+      );
+    });
+
   /** Doda tag (brez podvajanja) in počisti vnosno polje. */
   const addTag = (raw: string) => {
     const value = raw.trim();
@@ -354,6 +377,7 @@ export default function AddPersonScreen() {
     setContacts([{ key: newContactKey(), type: 'whatsapp', value: '' }]);
     setNote('');
     setMetLocation('');
+    setMetContext('');
     setPlaceCoords(null);
     setMetPlaceCoords(null);
     setMetDate(new Date());
@@ -364,26 +388,28 @@ export default function AddPersonScreen() {
   const onSave = async () => {
     if (saving) return;
 
-    const missing: string[] = [];
-    if (!firstName.trim()) missing.push(STRINGS.addPerson.missingFieldNames.firstName);
-    if (!lastName.trim()) missing.push(STRINGS.addPerson.missingFieldNames.lastName);
-    if (!country.trim()) missing.push(STRINGS.addPerson.missingFieldNames.country);
-    if (!city.trim()) missing.push(STRINGS.addPerson.missingFieldNames.city);
-    if (missing.length > 0) {
-      Alert.alert(STRINGS.addPerson.missingFieldsTitle, `${STRINGS.addPerson.missingFieldsPrefix}${missing.join(', ')}.`);
+    // Dovolj je katerikoli podatek (datum srečanja se ne šteje – nova oseba ga ima privzeto nastavljenega).
+    const hasAnyDetail =
+      [firstName, lastName, country, city, metLocation, metContext, note, tagInput].some((v) => v.trim()) ||
+      contacts.some((c) => c.value.trim()) ||
+      tags.length > 0 ||
+      photoUris.length > 0;
+    if (!hasAnyDetail) {
+      Alert.alert(STRINGS.addPerson.atLeastOneTitle, STRINGS.addPerson.atLeastOneMessage);
       return;
     }
 
     setSaving(true);
     try {
       setSavePhase('geocoding');
-      const location = placeCoords ?? (await geocodeLocation(city.trim(), country.trim()));
-      if (!location) {
-        Alert.alert(
-          STRINGS.addPerson.locationNotFoundTitle,
-          STRINGS.addPerson.locationNotFoundMessage(city.trim(), country.trim()),
-        );
-        return;
+      // Kraj je neobvezen: brez mesta/države oseba nima točke na zemljevidu (lat/lng = null).
+      let location: GeocodeResult | null = null;
+      if (city.trim() || country.trim()) {
+        location = placeCoords ?? (await geocodeLocation(city.trim(), country.trim()));
+        if (!location) {
+          const place = [city.trim(), country.trim()].filter(Boolean).join(', ');
+          if (!(await confirmSaveWithoutLocation(place))) return;
+        }
       }
 
       // Kraj srečanja je neobvezen; ce ga geokodiranje ne najde, samo pustimo
@@ -437,14 +463,15 @@ export default function AddPersonScreen() {
           photo_urls: photoUrlsField,
           country: country.trim(),
           city: city.trim(),
-          latitude: location.latitude,
-          longitude: location.longitude,
+          latitude: location?.latitude ?? null,
+          longitude: location?.longitude ?? null,
           // Kontakti gredo v person_contacts (finalContacts spodaj) – ta stolpca sta ukinjena.
           contact_type: null,
           contact_value: null,
           note: trimmedNote,
           met_date: metDate ? toIsoDate(metDate) : null,
           met_location: metLocation.trim() || null,
+          met_context: metContext.trim() || null,
           met_latitude: metCoords?.latitude ?? null,
           met_longitude: metCoords?.longitude ?? null,
           tags: tagsField,
@@ -460,13 +487,14 @@ export default function AddPersonScreen() {
           photoUrls: photoUrlsField,
           country: country.trim(),
           city: city.trim(),
-          latitude: location.latitude,
-          longitude: location.longitude,
+          latitude: location?.latitude ?? null,
+          longitude: location?.longitude ?? null,
           contacts: finalContacts,
           linkedUserId: connectTarget?.uid ?? null,
           note: trimmedNote,
           metDate: metDate ? toIsoDate(metDate) : null,
           metLocation: metLocation.trim() || null,
+          metContext: metContext.trim() || null,
           metLatitude: metCoords?.latitude ?? null,
           metLongitude: metCoords?.longitude ?? null,
           tags: tagsField,
@@ -653,6 +681,16 @@ export default function AddPersonScreen() {
           placeholder={STRINGS.addPerson.metLocationPlaceholder}
         />
         <Text style={styles.hint}>{STRINGS.addPerson.metLocationHint}</Text>
+        <View>
+          <Text style={styles.label}>{STRINGS.addPerson.metContextLabel}</Text>
+          <TextInput
+            style={styles.input}
+            value={metContext}
+            onChangeText={setMetContext}
+            placeholder={STRINGS.addPerson.metContextPlaceholder}
+            placeholderTextColor={colors.textMuted}
+          />
+        </View>
 
         {/* Datum srečanja */}
         <Text style={styles.sectionTitle}>{STRINGS.addPerson.metDateSectionTitle}</Text>
@@ -747,6 +785,14 @@ export default function AddPersonScreen() {
           {photoUris.slice(1).map((uri) => (
             <View key={uri} style={styles.galleryThumbWrap}>
               <Image source={{ uri }} style={styles.galleryThumb} />
+              <Pressable
+                style={styles.galleryStarBadge}
+                onPress={() => setAsProfilePhoto(uri)}
+                accessibilityRole="button"
+                accessibilityLabel={STRINGS.addPerson.setAsProfileAccessibilityLabel}
+              >
+                <Ionicons name="star" size={12} color={colors.onPrimary} />
+              </Pressable>
               <Pressable
                 style={styles.galleryRemoveBadge}
                 onPress={() => removePhoto(uri)}
@@ -1037,6 +1083,19 @@ const createStyles = (colors: AppColors) => StyleSheet.create({
   galleryRow: { gap: 10, paddingVertical: 2 },
   galleryThumbWrap: { width: 64, height: 64 },
   galleryThumb: { width: 64, height: 64, borderRadius: 12, backgroundColor: colors.surfaceMuted },
+  galleryStarBadge: {
+    position: 'absolute',
+    bottom: -6,
+    left: -6,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: colors.background,
+  },
   galleryRemoveBadge: {
     position: 'absolute',
     top: -6,

@@ -24,6 +24,7 @@ import * as Sharing from 'expo-sharing';
 import type { RootStackParamList } from '../navigation/types';
 import type { ContactType } from '../types/person';
 import { getPerson, deletePerson, type PeopleRow, type PersonContactRow } from '../lib/people';
+import { personFullName, personPlace } from '../lib/personDisplay';
 import { getConnectionLocation, type ConnectionLocation } from '../lib/connections';
 import { updatedAgoLabel } from '../lib/dates';
 import { withAlpha, type AppColors } from '../theme/colors';
@@ -154,7 +155,7 @@ export default function PersonProfileScreen() {
     setSharing(true);
     try {
       const uri = await captureRef(shareCardRef, { format: 'png', quality: 1 });
-      const message = STRINGS.personProfile.shareMessage(person.first_name, person.city);
+      const message = STRINGS.personProfile.shareMessage(personFullName(person), person.city.trim());
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(uri, { dialogTitle: message, mimeType: 'image/png', UTI: 'public.png' });
       } else {
@@ -173,7 +174,7 @@ export default function PersonProfileScreen() {
     if (!person) return;
     Alert.alert(
       STRINGS.personProfile.deleteConfirmTitle,
-      STRINGS.personProfile.deleteConfirmMessage(`${person.first_name} ${person.last_name}`),
+      STRINGS.personProfile.deleteConfirmMessage(personFullName(person)),
       [
         { text: STRINGS.common.cancel, style: 'cancel' },
         {
@@ -216,7 +217,8 @@ export default function PersonProfileScreen() {
     );
   }
 
-  const fullName = `${person.first_name} ${person.last_name}`;
+  const fullName = personFullName(person);
+  const place = personPlace(person);
   const hasMeeting = !!person.met_date || !!person.met_location;
   // photo_urls (novo, polje slik) ima prednost; photo_url (staro, ena slika) kot fallback.
   const photos =
@@ -241,12 +243,12 @@ export default function PersonProfileScreen() {
               </View>
             )}
             <Text style={styles.name}>{fullName}</Text>
-            <View style={styles.locationRow}>
-              <Ionicons name="location-outline" size={15} color={colors.textSecondary} />
-              <Text style={styles.location}>
-                {person.city}, {person.country}
-              </Text>
-            </View>
+            {place ? (
+              <View style={styles.locationRow}>
+                <Ionicons name="location-outline" size={15} color={colors.textSecondary} />
+                <Text style={styles.location}>{place}</Text>
+              </View>
+            ) : null}
           </View>
           {hasMeeting ? (
             <MetStampBadge
@@ -382,7 +384,7 @@ export default function PersonProfileScreen() {
         <ShareCard
           ref={shareCardRef}
           name={fullName}
-          location={`${person.city}, ${person.country}`}
+          location={place}
           photoUrl={photos[0] ?? null}
         />
       </View>

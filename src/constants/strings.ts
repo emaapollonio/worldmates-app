@@ -22,6 +22,7 @@ export const STRINGS = {
     loading: 'Loading …',
     genericRetryMessage: 'Please try again.',
     unknownError: 'Unknown error',
+    unnamedPerson: 'Unnamed person',
     offlineBanner: 'Offline – showing last known data',
     loadPeopleErrorGeneric: 'Could not load people.',
   },
@@ -74,6 +75,8 @@ export const STRINGS = {
     passwordLabel: 'Password',
     passwordPlaceholder: '••••••••',
     confirmPasswordLabel: 'Confirm password',
+    showPassword: 'Show password',
+    hidePassword: 'Hide password',
     signInButton: 'Log in',
     signUpButton: 'Sign up',
     switchToSignUpPrompt: "Don't have an account? Sign up",
@@ -104,7 +107,16 @@ export const STRINGS = {
   },
 
   addPerson: {
-    privacyNotice: 'Private – your data is stored only on your device.',
+    privacyNotice: 'Private – only you can see the people you add.',
+    atLeastOneTitle: 'Nothing to save yet',
+    atLeastOneMessage: 'Add at least one detail to save this person.',
+    saveWithoutLocationTitle: 'Location not found',
+    saveWithoutLocationMessage: (place: string) =>
+      `We couldn't find "${place}" on the map. You can save without a map location and fix it later.`,
+    saveWithoutLocationAction: 'Save anyway',
+    setAsProfileAccessibilityLabel: 'Set as profile photo',
+    metContextLabel: 'Details (optional)',
+    metContextPlaceholder: 'e.g. Spain, Erasmus',
     firstNameLabel: 'First name *',
     firstNamePlaceholder: 'e.g. Marco',
     lastNameLabel: 'Last name *',
@@ -142,7 +154,7 @@ export const STRINGS = {
     addContactButton: '+ Add contact',
     removeContactAccessibilityLabel: 'Remove this contact',
     photosSectionTitle: 'Photos',
-    photosHint: 'The first photo added is the profile picture; add shared memory photos here.',
+    photosHint: 'The first photo is the profile picture. Tap the star on another photo to make it the profile picture.',
     photoPickerAccessibilityLabel: 'Add or change profile photo',
     addPhotoAccessibilityLabel: 'Add photo',
     removePhotoAccessibilityLabel: 'Remove photo',
@@ -205,7 +217,8 @@ export const STRINGS = {
     deletedToast: 'Person deleted',
     shareButton: 'Share',
     shareErrorMessage: 'Sharing failed. Please try again.',
-    shareMessage: (name: string, city: string) => `Met ${name} in ${city} 🌍 – ${APP_NAME}`,
+    shareMessage: (name: string, city: string) =>
+      city ? `Met ${name} in ${city} 🌍 – ${APP_NAME}` : `Met ${name} 🌍 – ${APP_NAME}`,
   },
 
   map: {
@@ -282,6 +295,8 @@ export const STRINGS = {
     connectionAcceptedToast: 'Connected',
     qrConnectToggle: 'Allow connection requests in MetMap',
     qrConnectHint: 'Adds your account ID to the code so a friend can send you a request. You still have to accept it.',
+    cloudNote:
+      'All your data is safely stored in the cloud, not just on this device. If you lose your phone, simply log in on a new one with the same account and everything will be there.',
     myQrButton: 'My QR code',
     qrTitle: 'My QR code',
     qrDescription: 'A friend can scan this with any camera to start adding you in MetMap. Choose what to include:',
